@@ -1,0 +1,55 @@
+schema: '2.0'
+stages:
+  get_data:
+    cmd: python src/get_data.py
+    deps:
+    - path: src/get_data.py
+      hash: md5
+      md5: 3e362b79512875eaf44f20ddc53d6be2
+      size: 341
+    outs:
+    - path: data/raw/california_housing.csv
+      hash: md5
+      md5: ca5b757f0729c68d74d05bf9d9ca8486
+      size: 1895154
+  preprocess:
+    cmd: python src/preprocess_data.py
+    deps:
+    - path: data/raw/california_housing.csv
+      hash: md5
+      md5: ca5b757f0729c68d74d05bf9d9ca8486
+      size: 1895154
+    - path: src/preprocess_data.py
+      hash: md5
+      md5: 29210c0013bf1af28a7db8676f52d938
+      size: 445
+    outs:
+    - path: data/processed/california_housing.csv
+      hash: md5
+      md5: dc3652d63a7db03d872bd2b109229c29
+      size: 1986071
+  train:
+    cmd: python src/train_model.py
+    deps:
+    - path: data/processed/california_housing.csv
+      hash: md5
+      md5: dc3652d63a7db03d872bd2b109229c29
+      size: 1986071
+    - path: src/train_model.py
+      hash: md5
+      md5: e54052b91415008ebcc07abb56f6f0d8
+      size: 2572
+    outs:
+    - path: mlruns/
+      hash: md5
+      md5: 794e8db8ff84d183205a1d50ded3efd1.dir
+      size: 2294099
+      nfiles: 54
+    - path: models/DecisionTree.pkl
+      hash: md5
+      md5: b75c25efba13754fa744770d41f6f88f
+      size: 2285713
+    - path: models/LinearRegression.pkl
+      hash: md5
+      md5: 8f244e5aed2e784bf0e20981e502199a
+      size: 1033

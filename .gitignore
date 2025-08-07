@@ -1,0 +1,41 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# MLflow tracking directory
+mlruns/
+mlartifacts/
+
+# Model artifacts (DVC managed)
+models/
+
+# Data files (managed by DVC)
+data/raw/
+data/processed/california_housing.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
+
+# Logs
+*.log
+logs/
+/mlruns

@@ -1,0 +1,26 @@
+stages:
+  get_data:
+    cmd: python src/get_data.py
+    deps:
+    - src/get_data.py
+    outs:
+    - data/raw/california_housing.csv
+
+  preprocess:
+    cmd: python src/preprocess_data.py
+    deps:
+    - src/preprocess_data.py
+    - data/raw/california_housing.csv
+    outs:
+    - data/processed/california_housing.csv
+
+  train:
+    cmd: python src/train_model.py
+    deps:
+    - src/train_model.py
+    - data/processed/california_housing.csv
+    outs:
+    - models/LinearRegression.pkl
+    - models/DecisionTree.pkl
+    metrics:
+    - mlruns/
