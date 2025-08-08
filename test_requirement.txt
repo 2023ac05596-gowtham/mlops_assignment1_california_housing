@@ -6,6 +6,7 @@ pytest-cov>=4.0.0
 pytest-mock>=3.10.0
 
 # HTTP testing for FastAPI
+fastapi>=0.104.0
 httpx>=0.24.0
 
 # Additional testing utilities
