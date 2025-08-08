@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  lint-and-test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       # Step 1: Checkout the code
@@ -28,12 +28,54 @@ jobs:
       - name: Lint code
         run: flake8 src/
 
-      Step 5: Run unit tests
+      # Step 5: Run unit tests
       - name: Run tests
         run: pytest tests/
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, "3.10", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r test_requirements.txt
+    
+    - name: Make test script executable
+      run: chmod +x run_tests.sh
+
+    - name: Run tests with pytest
+      run: |
+        pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing -v
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.9'
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
 
   dockerize:
-    needs: lint-and-test  # Run this job only if lint-and-test succeeds
+    needs: test  # Run this job only if test succeeds
     runs-on: ubuntu-latest
     steps:
       # Step 1: Checkout the code
