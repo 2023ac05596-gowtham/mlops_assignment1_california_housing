@@ -1,15 +1,15 @@
 stages:
-  get_data:
-    cmd: python src/get_data.py
+  fetch_data:
+    cmd: python src/fetch_data.py
     deps:
-    - src/get_data.py
+    - src/fetch_data.py
     outs:
     - data/raw/california_housing.csv
 
   preprocess:
-    cmd: python src/preprocess_data.py
+    cmd: python src/data_preprocessing.py
     deps:
-    - src/preprocess_data.py
+    - src/data_preprocessing.py
     - data/raw/california_housing.csv
     outs:
     - data/processed/california_housing.csv

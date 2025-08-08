@@ -47,17 +47,48 @@ Implement a reproducible and trackable machine learning workflow using:
 │   ├── raw/                           # Raw dataset (DVC managed)
 │   └── processed/                     # Processed dataset (DVC managed)
 ├── src/
-│   ├── get_data.py                    # Data fetching script
-│   ├── preprocess_data.py             # Data preprocessing script
-│   └── train_model.py                 # Training script with MLflow tracking
+│   ├── fetch_data.py                  # Data fetching script
+│   ├── data_preprocessing.py          # Data preprocessing script
+│   ├── train_model.py                 # Training script with MLflow tracking
+│   ├── api.py                         # FastAPI prediction service (main API)
+│   ├── schemas.py                     # Pydantic request/response models
+│   ├── models.py                      # ML model operations & utilities
+│   ├── config.py                      # Configuration & logging setup
+│   ├── database.py                    # Database operations & SQLite management
+│   └── metrics.py                     # Metrics tracking & performance monitoring
 ├── models/                            # Trained models (DVC managed)
+├── logs/                              # Application logs & monitoring data
+│   ├── api_requests.log               # API request/response logs
+│   └── predictions.db                 # SQLite database for prediction history
 ├── dvc.yaml                           # DVC pipeline config
 ├── dvc.lock                           # DVC pipeline lock file
 ├── requirements.txt                   # Python dependencies
+├── Dockerfile                         # Docker containerization config
+├── .dockerignore                      # Docker ignore rules
+├── run_api.sh                         # Script to run API locally
 ├── .gitignore                         # Git ignore rules
 ├── .dvcignore                         # DVC ignore rules
 └── README.md                          # This file
 ```
+
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Version Control** | Git + GitHub | Code versioning & collaboration |
+| **Data Versioning** | DVC | Dataset & model versioning |
+| **ML Tracking** | MLflow | Experiment tracking & model registry |
+| **ML Framework** | scikit-learn | Model training & evaluation |
+| **Data Processing** | pandas, numpy | Data manipulation |
+| **API Framework** | FastAPI | RESTful prediction service |
+| **API Server** | uvicorn | ASGI web server |
+| **Containerization** | Docker | Application packaging |
+| **Input Validation** | pydantic | API request/response validation |
+| **Database** | SQLite | Prediction logging & metrics storage |
+| **Monitoring** | Custom metrics | Performance & usage tracking |
+| **Environment** | Python venv | Dependency isolation |
 
 ---
 
@@ -83,7 +114,7 @@ dvc repro
 ```
 
 This will run the complete pipeline:
-1. **get_data**: Download California Housing dataset
+1. **fetch_data**: Download California Housing dataset
 2. **preprocess**: Clean and transform the data  
 3. **train**: Train models and save artifacts
 
@@ -127,26 +158,13 @@ Then open [http://localhost:5000](http://localhost:5000) to view experiments and
 
 ---
 
-## 🛠️ Technology Stack
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Version Control** | Git + GitHub | Code versioning & collaboration |
-| **Data Versioning** | DVC | Dataset & model versioning |
-| **ML Tracking** | MLflow | Experiment tracking & model registry |
-| **ML Framework** | scikit-learn | Model training & evaluation |
-| **Data Processing** | pandas, numpy | Data manipulation |
-| **Environment** | Python venv | Dependency isolation |
-
----
-
 ## 🔄 Pipeline Workflow
 
 ```mermaid
 graph LR
-    A[Raw Data] --> B[get_data.py]
+    A[Raw Data] --> B[fetch_data.py]
     B --> C[data/raw/]
-    C --> D[preprocess_data.py]
+    C --> D[data_preprocessing.py]
     D --> E[data/processed/]
     E --> F[train_model.py]
     F --> G[models/]
@@ -158,6 +176,117 @@ graph LR
 3. **Model Training**: Train multiple models with MLflow tracking
 4. **Model Selection**: Automatically select best performing model
 5. **Model Registry**: Register models in MLflow for deployment
+
+---
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|---------|-------------|
+| `/` | GET | API information and available endpoints |
+| `/health` | GET | Health check and model status |
+| `/predict` | POST | Single housing price prediction |
+| `/predict/batch` | POST | Batch predictions (up to 1000 samples) |
+| `/metrics` | GET | API usage statistics and performance metrics |
+| `/docs` | GET | Interactive API documentation (Swagger UI) |
+
+### Quick Start API
+
+#### 1. Run locally with script
+```bash
+./run_api.sh
+```
+
+#### 2. Run with Python directly
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the API server
+cd src && python api.py
+```
+
+#### 3. Run with Docker
+```bash
+# Build Docker image
+docker build -t california-housing-api .
+
+# Run container
+docker run -p 8000:8000 california-housing-api
+```
+
+### 🌐 Accessing API Endpoints
+
+Once your API is running (using any method above), you can access the endpoints at:
+
+**Base URL**: `http://localhost:8000`
+
+#### 1. **Interactive Documentation** (Recommended)
+Visit: `http://localhost:8000/docs`
+- Complete API documentation with interactive testing
+- Try all endpoints directly from your browser
+- See request/response schemas and examples
+
+#### 2. **API Information**
+Visit: `http://localhost:8000/` 
+- Basic API information and available endpoints
+- Quick overview of the service
+
+#### 3. **Health Check**
+Visit: `http://localhost:8000/health`
+- Check if the API and model are loaded correctly
+- Monitor service status
+
+#### 4. **Metrics & Monitoring**
+Visit: `http://localhost:8000/metrics`
+- API usage statistics and performance metrics
+- Request counts, response times, error rates
+- Recent prediction history and database stats
+- Model performance tracking
+
+#### 5. **Make Predictions**
+**Endpoints**: 
+- Single: `POST http://localhost:8000/predict`
+- Batch: `POST http://localhost:8000/predict/batch`
+
+**Required Headers**: `Content-Type: application/json`
+
+**Input Features** (all required with validation ranges):
+- `MedInc`: Median income in block group (0.5 - 15.0)
+- `HouseAge`: Median house age in block group (1 - 52 years)  
+- `AveRooms`: Average rooms per household (2.0 - 15.0)
+- `AveBedrms`: Average bedrooms per household (0.1 - 5.0)
+- `Population`: Block group population (3 - 40,000)
+- `AveOccup`: Average occupancy per household (1.0 - 50.0)
+- `Latitude`: Geographic latitude (32.5 - 41.95)
+- `Longitude`: Geographic longitude (-124.35 to -114.13)
+
+### Testing the API
+```bash
+# Test single prediction
+curl -X POST "http://localhost:8000/predict" \
+-H "Content-Type: application/json" \
+-d '{"MedInc": 8.33, "HouseAge": 41.0, "AveRooms": 6.98, "AveBedrms": 1.02, "Population": 322.0, "AveOccup": 2.56, "Latitude": 37.88, "Longitude": -122.23}'
+
+# Test batch prediction
+curl -X POST "http://localhost:8000/predict/batch" \
+-H "Content-Type: application/json" \
+-d '{
+  "features": [
+    {
+      "MedInc": 8.33, "HouseAge": 41.0, "AveRooms": 6.98, "AveBedrms": 1.02, "Population": 322.0, "AveOccup": 2.56,
+      "Latitude": 37.88, "Longitude": -122.23
+    },
+    {
+      "MedInc": 7.26, "HouseAge": 52.0, "AveRooms": 8.29, "AveBedrms": 1.07, "Population": 496.0, "AveOccup": 2.80,
+      "Latitude": 37.85, "Longitude": -122.24
+    }
+  ]
+}'
+```
 
 ---
 
@@ -176,13 +305,29 @@ graph LR
 - [x] Both models registered in Model Registry
 - [x] Best model auto-selection (Decision Tree: RMSE 70,528.80, R² 0.62)
 
+### ✅ Part 3: API & Docker Packaging
+- [x] **FastAPI** prediction service with comprehensive endpoints
+- [x] **Input validation** using pydantic schemas
+- [x] **Single & batch prediction** capabilities
+- [x] **Docker containerization** with optimized Dockerfile
+- [x] **Health checks** and logging for monitoring
+- [x] **JSON input/output** with proper error handling
+
+### ✅ Part 5: Logging and Monitoring
+- [x] **Essential Logging**: File-based and SQLite database logging
+- [x] **Prediction Tracking**: Complete tracking with confidence scores
+- [x] **Performance Metrics**: API usage and response time tracking
+- [x] **Metrics Endpoint**: `/metrics` for monitoring data
+- [x] **Modular Architecture**: Clean separation of concerns
+- [x] **Error Tracking**: Structured error logging
+- [x] **Database Storage**: SQLite for persistent metrics storage
+
 ---
 
-## 📌 Upcoming (Part 3+)
-- Model packaging with Flask/FastAPI
-- Docker containerization
+## 📌 Upcoming (Part 4+)
 - CI/CD with GitHub Actions
-- Logging & Monitoring
+- Automated testing pipeline
+- Docker Hub integration
 
 ---
 
@@ -217,6 +362,28 @@ pip install -r requirements.txt
 ```bash
 # Fix file permissions
 chmod +x src/*.py
+```
+
+**5. API Port Already in Use**
+```bash
+# If you get "Address already in use" error on port 8000
+# Find what's using port 8000
+lsof -i :8000
+
+# Kill the conflicting process (replace PID with actual process ID)
+kill -9 <PID>
+
+# Or kill all processes using port 8000
+lsof -ti :8000 | xargs kill -9
+```
+
+**6. API Issues**
+```bash
+# Check API health
+curl http://localhost:8000/health
+
+# Or check API documentation
+open http://localhost:8000/docs
 ```
 
 ---
