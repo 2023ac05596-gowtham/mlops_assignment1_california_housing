@@ -28,9 +28,9 @@ jobs:
       - name: Lint code
         run: flake8 src/
 
-      # Step 5: Run unit tests
-      # - name: Run tests
-      #   run: pytest tests/
+      Step 5: Run unit tests
+      - name: Run tests
+        run: pytest tests/
 
   dockerize:
     needs: lint-and-test  # Run this job only if lint-and-test succeeds
