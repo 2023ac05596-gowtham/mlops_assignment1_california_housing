@@ -93,8 +93,8 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    INSERT INTO predictions 
-                    (timestamp, input_data, prediction, confidence, 
+                    INSERT INTO predictions
+                    (timestamp, input_data, prediction, confidence,
                     response_time,
                      model_used, endpoint, error_message)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
