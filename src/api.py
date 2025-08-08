@@ -202,7 +202,7 @@ async def get_metrics():
         try:
             metrics_tracker = get_metrics_tracker()
             basic_stats = metrics_tracker.get_basic_stats()
-        except:
+        except Exception:
             basic_stats = {"error": "Metrics tracker not available"}
 
         return {
@@ -239,7 +239,12 @@ async def predict_single(features: HousingFeatures):
                     status_code=500,
                     detail={
                         "error": "Model not loaded",
-                        "suggestion": "Please wait for the model to load or contact support",
+                        "suggestion": (
+                            (
+                                "Please wait for the model to load or contact "
+                                "support"
+                            )
+                        ),
                     },
                 )
 
@@ -271,7 +276,8 @@ async def predict_single(features: HousingFeatures):
 
             # Log the prediction result
             logger.info(
-                f"Prediction made: ${prediction:.2f} (confidence: {confidence:.3f})"
+                f"Prediction made: ${prediction:.2f} "
+                f"(confidence: {confidence:.3f})"
             )
 
             # Log to database
@@ -332,7 +338,10 @@ async def predict_single(features: HousingFeatures):
                 status_code=500,
                 detail={
                     "error": f"Prediction error: {str(e)}",
-                    "suggestion": "Please check your input values and try again. Contact support if the problem persists.",
+                    "suggestion": (
+                        "Please check your input values and try again. "
+                        "Contact support if the problem persists."
+                    ),
                 },
             )
 
@@ -356,7 +365,10 @@ async def predict_batch(request: BatchPredictionRequest):
 
         try:
             logger.info(
-                f"Batch prediction request received for {len(request.features)} samples"
+                (
+                    f"Batch prediction request received for "
+                    f"{len(request.features)} samples"
+                )
             )
 
             if not is_model_loaded():
@@ -365,7 +377,12 @@ async def predict_batch(request: BatchPredictionRequest):
                     status_code=500,
                     detail={
                         "error": "Model not loaded",
-                        "suggestion": "Please wait for the model to load or contact support",
+                        "suggestion": (
+                            (
+                                "Please wait for the model to load or contact "
+                                "support"
+                            )
+                        ),
                     },
                 )
 
@@ -373,8 +390,16 @@ async def predict_batch(request: BatchPredictionRequest):
                 raise HTTPException(
                     status_code=400,
                     detail={
-                        "error": f"Batch size too large: {len(request.features)} samples",
-                        "suggestion": "Maximum 1000 predictions allowed. Please split your request into smaller batches.",
+                        "error": (
+                            (
+                                f"Batch size too large: "
+                                f"{len(request.features)} samples"
+                            )
+                        ),
+                        "suggestion": (
+                            "Maximum 1000 predictions allowed. "
+                            "Please split your request into smaller batches."
+                        ),
                     },
                 )
 
@@ -383,7 +408,10 @@ async def predict_batch(request: BatchPredictionRequest):
                     status_code=400,
                     detail={
                         "error": "Empty batch request",
-                        "suggestion": "Please provide at least one set of features for prediction",
+                        "suggestion": (
+                            "Please provide at least one set of features for "
+                            "prediction"
+                        ),
                     },
                 )
 
@@ -396,7 +424,10 @@ async def predict_batch(request: BatchPredictionRequest):
                     raise HTTPException(
                         status_code=422,
                         detail={
-                            "error": f"Invalid input at index {i}: {validation_errors[0]['error']}",
+                            "error": (
+                                f"Invalid input at index {i}: "
+                                f"{validation_errors[0]['error']}"
+                            ),
                             "suggestion": validation_errors[0]["suggestion"],
                         },
                     )
@@ -416,7 +447,9 @@ async def predict_batch(request: BatchPredictionRequest):
             detailed_predictions = []
             confidence_scores = []
 
-            for i, (pred, feature_row) in enumerate(zip(predictions, feature_arrays)):
+            for i, (pred, feature_row) in enumerate(
+                zip(predictions, feature_arrays)
+            ):
                 feature_array_single = np.array([feature_row])
                 confidence = calculate_confidence_score(
                     get_model(), feature_array_single
@@ -442,9 +475,12 @@ async def predict_batch(request: BatchPredictionRequest):
                     }
                 )
 
-            logger.info(f"Batch prediction completed for {len(predictions)} samples")
+            logger.info(
+                f"Batch prediction completed for {len(predictions)} samples"
+            )
 
-            # Log batch prediction to database (using average values for the batch)
+            # Log batch prediction to database
+            # (using average values for the batch)
             response_time = timer.get_response_time()
             avg_prediction = float(np.mean(predictions))
             avg_confidence = sum(confidence_scores) / len(confidence_scores)
@@ -500,7 +536,10 @@ async def predict_batch(request: BatchPredictionRequest):
                 status_code=500,
                 detail={
                     "error": f"Batch prediction error: {str(e)}",
-                    "suggestion": "Please check your input data format and try again. Contact support if the problem persists.",
+                    "suggestion": (
+                        "Please check your input data format and try again. "
+                        "Contact support if the problem persists."
+                    ),
                 },
             )
 

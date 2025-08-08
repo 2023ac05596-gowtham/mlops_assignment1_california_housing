@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Metrics tracking and monitoring for California Housing Price Prediction API
-Handles in-memory metrics, performance calculations, and monitoring data aggregation
+Handles in-memory metrics, performance calculations, and monitoring data
+aggregation
 """
 
 import time
@@ -22,7 +23,8 @@ class MetricsTracker:
         Initialize metrics tracker
 
         Args:
-            max_response_times: Maximum number of response times to keep in memory
+            max_response_times: Maximum number of response times to keep in
+                memory
         """
         self.max_response_times = max_response_times
         self.reset_metrics()
@@ -54,7 +56,7 @@ class MetricsTracker:
         # Keep only the last N response times to prevent memory issues
         if len(self.metrics["response_times"]) > self.max_response_times:
             self.metrics["response_times"] = self.metrics["response_times"][
-                -self.max_response_times :
+                -self.max_response_times:
             ]
 
     def track_error(self, error_type: str):
@@ -67,7 +69,10 @@ class MetricsTracker:
         response_times = self.metrics["response_times"]
 
         if not response_times:
-            return {"average_response_time_seconds": 0, "total_requests_timed": 0}
+            return {
+                "average_response_time_seconds": 0,
+                "total_requests_timed": 0,
+            }
 
         return {
             "average_response_time_seconds": round(
@@ -83,7 +88,9 @@ class MetricsTracker:
 
         success_rate = 0
         if total_requests > 0:
-            success_rate = ((total_requests - total_errors) / total_requests) * 100
+            success_rate = (
+                (total_requests - total_errors) / total_requests
+            ) * 100
 
         return {
             "total_requests": total_requests,
@@ -91,7 +98,15 @@ class MetricsTracker:
             "total_errors": total_errors,
             "success_rate_percent": round(success_rate, 2),
             "uptime_hours": round(
-                (datetime.now() - self.metrics["start_time"]).total_seconds() / 3600, 2
+                round(
+                    (
+                        (
+                            datetime.now() - self.metrics["start_time"]
+                        ).total_seconds()
+                        / 3600
+                    ),
+                    2,
+                )
             ),
         }
 
@@ -106,7 +121,13 @@ class MetricsTracker:
             "total_predictions": self.metrics["total_predictions"],
             "total_errors": self.metrics["total_errors"],
             "uptime_hours": round(
-                (datetime.now() - self.metrics["start_time"]).total_seconds() / 3600, 2
+                (
+                    (
+                        datetime.now() - self.metrics["start_time"]
+                    ).total_seconds()
+                    / 3600
+                ),
+                2,
             ),
         }
 
@@ -165,7 +186,9 @@ def get_model_metrics() -> ModelMetrics:
 
 
 class RequestTimer:
-    """Context manager for timing requests and automatically tracking metrics"""
+    """
+    Context manager for timing requests and automatically tracking metrics
+    """
 
     def __init__(self, endpoint: str = "unknown"):
         self.endpoint = endpoint

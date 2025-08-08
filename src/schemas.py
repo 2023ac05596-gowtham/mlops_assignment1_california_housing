@@ -42,7 +42,11 @@ class HousingFeatures(BaseModel):
         title="Average Bedrooms",
     )
     Population: float = Field(
-        ..., description="Block group population", ge=3, le=40000, title="Population"
+        ...,
+        description="Block group population",
+        ge=3,
+        le=40000,
+        title="Population",
     )
     AveOccup: float = Field(
         ...,
@@ -87,7 +91,11 @@ class PredictionResponse(BaseModel):
     """
 
     predicted_price: float = Field(
-        ..., description="Predicted median house value in USD (United States Dollars)"
+        ...,
+        description=(
+            "Predicted median house value in USD "
+            "(United States Dollars)"
+        ),
     )
     confidence_score: float = Field(
         ..., description="Prediction confidence score (0-1, higher is better)"
@@ -116,7 +124,10 @@ class BatchPredictionResponse(BaseModel):
 
     predictions: List[dict] = Field(
         ...,
-        description="List of prediction results with confidence scores (prices in USD)",
+        description=(
+            "List of prediction results with confidence scores "
+            "(prices in USD)"
+        ),
     )
     model_used: str = Field(..., description="Model used for predictions")
     timestamp: str = Field(..., description="Prediction timestamp")

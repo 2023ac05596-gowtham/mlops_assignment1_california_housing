@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
@@ -69,16 +68,29 @@ with mlflow.start_run(run_name="DecisionTree") as run_dt:
     )
 
     print(f"DecisionTree - RMSE: {rmse:.2f}, R2: {r2:.2f}")
-    results["DecisionTree"] = {"rmse": rmse, "model": dt, "run_id": run_dt.info.run_id}
+    results["DecisionTree"] = {
+        "rmse": rmse,
+        "model": dt,
+        "run_id": run_dt.info.run_id,
+    }
 
 # Save models locally for DVC tracking
 os.makedirs("models", exist_ok=True)
-joblib.dump(results["LinearRegression"]["model"], "models/LinearRegression.pkl")
+joblib.dump(
+    results["LinearRegression"]["model"],
+    "models/LinearRegression.pkl"
+)
 joblib.dump(results["DecisionTree"]["model"], "models/DecisionTree.pkl")
 
 # Pick best model based on lowest RMSE
 best_model_name = min(results, key=lambda k: results[k]["rmse"])
 print(
-    f"\n✅ Best Model: {best_model_name} (Run ID: {results[best_model_name]['run_id']})"
+    (
+        f"\n✅ Best Model: {best_model_name} "
+        f"(Run ID: {results[best_model_name]['run_id']})"
+    )
 )
-print(f"📁 Models saved to: models/LinearRegression.pkl, models/DecisionTree.pkl")
+print(
+    "📁 Models saved to: models/LinearRegression.pkl, "
+    "models/DecisionTree.pkl"
+)

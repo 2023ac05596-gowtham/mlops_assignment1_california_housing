@@ -94,7 +94,8 @@ class DatabaseManager:
                 cursor.execute(
                     """
                     INSERT INTO predictions 
-                    (timestamp, input_data, prediction, confidence, response_time, 
+                    (timestamp, input_data, prediction, confidence, 
+                    response_time,
                      model_used, endpoint, error_message)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -127,8 +128,15 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    INSERT INTO api_metrics 
-                    (timestamp, endpoint, method, status_code, response_time, error_message)
+                    INSERT INTO api_metrics
+                    (
+                        timestamp,
+                        endpoint,
+                        method,
+                        status_code,
+                        response_time,
+                        error_message
+                    )
                     VALUES (?, ?, ?, ?, ?, ?)
                 """,
                     (
@@ -151,10 +159,10 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT timestamp, prediction, confidence, response_time 
-                    FROM predictions 
-                    WHERE error_message IS NULL 
-                    ORDER BY timestamp DESC 
+                    SELECT timestamp, prediction, confidence, response_time
+                    FROM predictions
+                    WHERE error_message IS NULL
+                    ORDER BY timestamp DESC
                     LIMIT ?
                 """,
                     (limit,),
@@ -223,6 +231,9 @@ def get_db_manager() -> DatabaseManager:
     """Get the global database manager instance"""
     if db_manager is None:
         raise RuntimeError(
-            "Database manager not initialized. Call initialize_database() first."
+            (
+                "Database manager not initialized. "
+                "Call initialize_database() first."
+            )
         )
     return db_manager

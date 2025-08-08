@@ -67,7 +67,9 @@ def load_model():
 
     try:
         model = joblib.load(model_path)
-        logger.info(f"Model {model_name} loaded successfully from {model_path}")
+        logger.info(
+            f"Model {model_name} loaded successfully from {model_path}"
+        )
     except Exception as e:
         logger.error(f"Error loading model: {str(e)}")
         raise e
@@ -121,7 +123,10 @@ def validate_business_logic(features):
     if features.AveBedrms > features.AveRooms:
         errors.append(
             {
-                "error": "Invalid input: Average bedrooms cannot exceed average rooms",
+                "error": (
+                    "Invalid input: Average bedrooms cannot exceed "
+                    "average rooms"
+                ),
                 "suggestion": "Please ensure AveBedrms <= AveRooms",
             }
         )
