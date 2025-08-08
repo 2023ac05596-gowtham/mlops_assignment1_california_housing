@@ -5,12 +5,21 @@ Test configuration for API tests
 
 import sys
 import tempfile
+import os
+import stat
 from pathlib import Path
 
 # Add src directory to Python path
 current_dir = Path(__file__).parent
 src_dir = current_dir.parent / "src"
 sys.path.insert(0, str(src_dir))
+
+# Make test runner script executable
+test_runner_script = current_dir.parent / "run_tests.sh"
+if test_runner_script.exists():
+    # Add execute permission for the owner
+    current_permissions = test_runner_script.stat().st_mode
+    test_runner_script.chmod(current_permissions | stat.S_IEXEC)
 
 # Test configuration
 TEST_DATA_DIR = current_dir / "test_data"
