@@ -1,0 +1,18 @@
+# Testing dependencies for California Housing Price Prediction API
+
+# Core testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+
+# HTTP testing for FastAPI
+httpx>=0.24.0
+
+# Additional testing utilities
+faker>=18.0.0
+factory-boy>=3.2.1
+
+# Coverage reporting
+coverage>=7.0.0
+
+# Install with: pip install -r test_requirements.txt
