@@ -1,0 +1,50 @@
+# TODO: Replace group124 and group124pw with your actual Docker Hub username and password used from github secrets
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the code
+      - uses: actions/checkout@v2
+
+      # Step 2: Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: pip install flake8 pytest
+
+      # Step 4: Lint the code
+      - name: Lint code
+        run: flake8 src/
+
+      # Step 5: Run unit tests
+      - name: Run tests
+        run: pytest tests/
+
+  dockerize:
+    needs: lint-and-test  # Run this job only if lint-and-test succeeds
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the code
+      - uses: actions/checkout@v2
+
+      # Step 2: Build Docker image
+      - name: Build Docker Image
+        run: docker build -t group124/california-housing-api .
+
+      # Step 3: Push Docker image to Docker Hub
+      - name: Push Docker Image
+        run: |
+          echo "group124pw" | docker login -u "group124" --password-stdin
+          docker push group124/california-housing-api
