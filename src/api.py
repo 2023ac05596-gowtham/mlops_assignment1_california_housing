@@ -6,8 +6,10 @@ Enhanced modular version with separated concerns
 
 import time
 from datetime import datetime
+from contextlib import asynccontextmanager
 
 import numpy as np
+import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
@@ -47,6 +49,7 @@ try:
         setup_prometheus_monitoring,
         get_prometheus_collector,
     )
+    from .retraining import get_retraining_manager
 except ImportError:
     # Fall back to direct imports (when run directly)
     from database import initialize_database, get_db_manager
@@ -81,18 +84,52 @@ except ImportError:
     from prometheus_metrics import setup_prometheus_monitoring, get_prometheus_collector
     from retraining import get_retraining_manager
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events"""
+    # Startup
+    global retraining_manager
+
+    load_model()
+    initialize_database(str(Config.get_db_path()))
+    initialize_metrics()
+
+    # Initialize retraining manager
+    retraining_manager = get_retraining_manager(
+        db_path=str(Config.get_db_path()),
+        models_dir=str(Config.get_models_dir()),
+        data_dir=str(Config.get_data_dir()),
+    )
+
+    # Initialize Prometheus metrics (middleware already set up)
+    get_prometheus_collector().set_model_status(is_model_loaded())
+
+    logger.info(
+        "FastAPI application started successfully with Prometheus monitoring and retraining capabilities"
+    )
+
+    yield
+
+    # Shutdown (if needed)
+    logger.info("FastAPI application shutting down")
+
+
 # Initialize FastAPI app
 app = FastAPI(
     title=Config.API_TITLE,
     description=Config.API_DESCRIPTION,
     version=Config.API_VERSION,
+    lifespan=lifespan,
 )
 
 # Setup Prometheus monitoring
 prometheus_instrumentator = setup_prometheus_monitoring(app)
-prometheus_collector = get_prometheus_collector()
 
-# Initialize retraining manager
+# Expose Prometheus metrics endpoint
+prometheus_instrumentator.expose(app, endpoint="/prometheus", tags=["monitoring"])
+
+# Initialize retraining manager (will be set in lifespan)
 retraining_manager = None
 
 
@@ -133,33 +170,6 @@ async def track_requests(request: Request, call_next):
         metrics_tracker.track_error(error_key)
 
     return response
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the model, database, and metrics on startup"""
-    global retraining_manager
-
-    load_model()
-    initialize_database(str(Config.get_db_path()))
-    initialize_metrics()
-
-    # Initialize retraining manager
-    retraining_manager = get_retraining_manager(
-        db_path=str(Config.get_db_path()),
-        models_dir=str(Config.get_models_dir()),
-        data_dir=str(Config.get_data_dir()),
-    )
-
-    # Expose Prometheus metrics endpoint
-    prometheus_instrumentator.expose(app, endpoint="/prometheus", tags=["monitoring"])
-
-    # Initialize Prometheus metrics
-    prometheus_collector.set_model_status(is_model_loaded())
-
-    logger.info(
-        "FastAPI application started successfully with Prometheus monitoring and retraining capabilities"
-    )
 
 
 @app.get("/")
@@ -284,10 +294,7 @@ async def predict_single(features: HousingFeatures):
                     detail={
                         "error": "Model not loaded",
                         "suggestion": (
-                            (
-                                "Please wait for the model to load or contact "
-                                "support"
-                            )
+                            ("Please wait for the model to load or contact " "support")
                         ),
                     },
                 )
@@ -316,16 +323,15 @@ async def predict_single(features: HousingFeatures):
             )
 
             # Track Prometheus metrics
-            prometheus_collector.track_prediction_request("/predict")
-            prometheus_collector.track_model_prediction()
+            get_prometheus_collector().track_prediction_request("/predict")
+            get_prometheus_collector().track_model_prediction()
 
             # Calculate prediction range
             pred_range = calculate_prediction_range(prediction, confidence)
 
             # Log the prediction result
             logger.info(
-                f"Prediction made: ${prediction:.2f} "
-                f"(confidence: {confidence:.3f})"
+                f"Prediction made: ${prediction:.2f} " f"(confidence: {confidence:.3f})"
             )
 
             # Log to database
@@ -340,8 +346,8 @@ async def predict_single(features: HousingFeatures):
             )
 
             # Track Prometheus duration
-            prometheus_collector.track_prediction_duration(
-                "/predict", get_model_name(), response_time
+            get_prometheus_collector().track_prediction_duration(
+                "/predict", response_time
             )
 
             response = PredictionResponse(
@@ -373,14 +379,10 @@ async def predict_single(features: HousingFeatures):
             )
 
             # Track Prometheus error metrics
-            prometheus_collector.track_prediction_request(
-                "/predict", get_model_name(), "error"
-            )
-            prometheus_collector.track_api_error(
-                "/predict", "validation_error", he.status_code
-            )
-            prometheus_collector.track_prediction_duration(
-                "/predict", get_model_name(), response_time
+            get_prometheus_collector().track_prediction_request("/predict", "error")
+            get_prometheus_collector().track_api_error("/predict", he.status_code)
+            get_prometheus_collector().track_prediction_duration(
+                "/predict", response_time
             )
 
             # Re-raise HTTP exceptions (validation errors)
@@ -400,12 +402,10 @@ async def predict_single(features: HousingFeatures):
             )
 
             # Track Prometheus error metrics
-            prometheus_collector.track_prediction_request(
-                "/predict", get_model_name(), "error"
-            )
-            prometheus_collector.track_api_error("/predict", "internal_error", 500)
-            prometheus_collector.track_prediction_duration(
-                "/predict", get_model_name(), response_time
+            get_prometheus_collector().track_prediction_request("/predict", "error")
+            get_prometheus_collector().track_api_error("/predict", 500)
+            get_prometheus_collector().track_prediction_duration(
+                "/predict", response_time
             )
 
             logger.error(f"Error making prediction: {str(e)}")
@@ -453,10 +453,7 @@ async def predict_batch(request: BatchPredictionRequest):
                     detail={
                         "error": "Model not loaded",
                         "suggestion": (
-                            (
-                                "Please wait for the model to load or contact "
-                                "support"
-                            )
+                            ("Please wait for the model to load or contact " "support")
                         ),
                     },
                 )
@@ -508,9 +505,10 @@ async def predict_batch(request: BatchPredictionRequest):
                     )
 
                 feature_array = prepare_feature_array(features)
-                feature_arrays.append(feature_array[0])  # Extract the 1D array
+                feature_arrays.append(feature_array)  # Keep as DataFrame
 
-            feature_matrix = np.array(feature_arrays)
+            # Combine all DataFrames
+            feature_matrix = pd.concat(feature_arrays, ignore_index=True)
 
             # Make predictions
             predictions = make_prediction(feature_matrix)
@@ -519,22 +517,17 @@ async def predict_batch(request: BatchPredictionRequest):
             metrics_tracker.track_prediction(len(predictions))
 
             # Track Prometheus batch metrics
-            prometheus_collector.track_prediction_request(
-                "/predict/batch", get_model_name()
-            )
-            prometheus_collector.track_batch_size(len(predictions))
+            get_prometheus_collector().track_prediction_request("/predict/batch")
+            get_prometheus_collector().track_batch_size(len(predictions))
 
             # Calculate confidence scores and build detailed predictions
             detailed_predictions = []
             confidence_scores = []
 
-            for i, (pred, feature_row) in enumerate(
-                zip(predictions, feature_arrays)
-            ):
-                feature_array_single = np.array([feature_row])
-                confidence = calculate_confidence_score(
-                    get_model(), feature_array_single
-                )
+            for i, pred in enumerate(predictions):
+                # Get the corresponding feature row as DataFrame
+                feature_single = feature_matrix.iloc[[i]]
+                confidence = calculate_confidence_score(get_model(), feature_single)
                 confidence_scores.append(confidence)
 
                 # Track individual prediction for model metrics
@@ -543,7 +536,7 @@ async def predict_batch(request: BatchPredictionRequest):
                 )
 
                 # Track Prometheus metrics for each prediction
-                prometheus_collector.track_model_prediction()
+                get_prometheus_collector().track_model_prediction()
 
                 pred_range = calculate_prediction_range(pred, confidence)
 
@@ -559,9 +552,7 @@ async def predict_batch(request: BatchPredictionRequest):
                     }
                 )
 
-            logger.info(
-                f"Batch prediction completed for {len(predictions)} samples"
-            )
+            logger.info(f"Batch prediction completed for {len(predictions)} samples")
 
             # Log batch prediction to database
             # (using average values for the batch)
@@ -579,8 +570,8 @@ async def predict_batch(request: BatchPredictionRequest):
             )
 
             # Track Prometheus batch duration
-            prometheus_collector.track_prediction_duration(
-                "/predict/batch", get_model_name(), response_time
+            get_prometheus_collector().track_prediction_duration(
+                "/predict/batch", response_time
             )
 
             response = BatchPredictionResponse(
@@ -607,14 +598,12 @@ async def predict_batch(request: BatchPredictionRequest):
             )
 
             # Track Prometheus error metrics
-            prometheus_collector.track_prediction_request(
-                "/predict/batch", get_model_name(), "error"
+            get_prometheus_collector().track_prediction_request(
+                "/predict/batch", "error"
             )
-            prometheus_collector.track_api_error(
-                "/predict/batch", "validation_error", he.status_code
-            )
-            prometheus_collector.track_prediction_duration(
-                "/predict/batch", get_model_name(), response_time
+            get_prometheus_collector().track_api_error("/predict/batch", he.status_code)
+            get_prometheus_collector().track_prediction_duration(
+                "/predict/batch", response_time
             )
 
             # Re-raise HTTP exceptions (validation errors)
@@ -634,14 +623,12 @@ async def predict_batch(request: BatchPredictionRequest):
             )
 
             # Track Prometheus error metrics
-            prometheus_collector.track_prediction_request(
-                "/predict/batch", get_model_name(), "error"
+            get_prometheus_collector().track_prediction_request(
+                "/predict/batch", "error"
             )
-            prometheus_collector.track_api_error(
-                "/predict/batch", "internal_error", 500
-            )
-            prometheus_collector.track_prediction_duration(
-                "/predict/batch", get_model_name(), response_time
+            get_prometheus_collector().track_api_error("/predict/batch", 500)
+            get_prometheus_collector().track_prediction_duration(
+                "/predict/batch", response_time
             )
 
             logger.error(f"Error making batch predictions: {str(e)}")
@@ -678,7 +665,7 @@ async def submit_training_data(data: TrainingDataSubmission):
         result = retraining_manager.add_training_data(features_dict, actual_price)
 
         # Track Prometheus metrics
-        prometheus_collector.track_new_data_points(1)
+        get_prometheus_collector().track_new_data_points(1)
 
         return RetrainingResponse(
             status=result["status"],
@@ -749,7 +736,7 @@ async def trigger_retraining(request: RetrainingTriggerRequest):
         result = retraining_manager.trigger_retraining(request.reason)
 
         # Track Prometheus metrics
-        prometheus_collector.track_retraining_trigger()
+        get_prometheus_collector().track_retraining_trigger()
 
         return RetrainingResponse(
             status=result["status"],
@@ -770,9 +757,9 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        "api:app",
+        app,
         host=Config.HOST,
         port=Config.PORT,
-        reload=Config.RELOAD,
+        reload=False,
         log_level=Config.LOG_LEVEL,
     )

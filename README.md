@@ -31,7 +31,7 @@ Implement a reproducible and trackable machine learning workflow using:
 
 ## 💻 Prerequisites
 
-- **Python**: 3.8+ recommended
+- **Python**: 3.10+ recommended
 - **Git**: For version control
 - **DVC**: For data versioning
 - **MLflow**: For experiment tracking
@@ -356,7 +356,7 @@ curl -X POST "http://localhost:8000/predict/batch" \
 - [x] **JSON input/output** with proper error handling
 
 ### ✅ Part 4: CI/CD with GitHub Actions
-- [x] **Automated Testing**: Multi-version Python testing (3.8, 3.9, 3.10, 3.11)
+- [x] **Automated Testing**: Multi-version Python testing (3.10, 3.11)
 - [x] **Code Linting**: Automated flake8 code quality checks
 - [x] **Docker Build & Push**: Automated Docker image build and push to Docker Hub
 - [x] **Deployment Pipeline**: Automated deployment using shell scripts
