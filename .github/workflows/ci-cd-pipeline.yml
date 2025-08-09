@@ -83,5 +83,5 @@ jobs:
       # Step 3: Push Docker image to Docker Hub
       - name: Push Docker Image
         run: |
-          echo "abhimanyuparashar" | docker login -u "abhimanyuparashar" --password-stdin
+          echo "group124pw" | docker login -u "abhimanyuparashar" --password-stdin
           docker push abhimanyuparashar/california-housing-api
