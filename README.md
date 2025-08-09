@@ -188,6 +188,10 @@ graph LR
 | `/predict` | POST | Single housing price prediction |
 | `/predict/batch` | POST | Batch predictions (up to 1000 samples) |
 | `/metrics` | GET | API usage statistics and performance metrics |
+| `/prometheus` | GET | Prometheus metrics endpoint |
+| `/training/submit` | POST | Submit new training data for retraining |
+| `/training/status` | GET | Get retraining status and recommendations |
+| `/training/trigger` | POST | Manually trigger model retraining |
 | `/docs` | GET | Interactive API documentation (Swagger UI) |
 
 ### Quick Start API
@@ -227,6 +231,17 @@ docker build -t california-housing-api .
 
 # Run container
 docker run -p 8000:8000 california-housing-api
+```
+
+#### 4. Run Complete Monitoring Stack (BONUS)
+```bash
+# Start API + Prometheus + Grafana
+docker-compose -f docker-compose.monitoring.yml up -d
+
+# Access services:
+# - API: http://localhost:8000
+# - Prometheus: http://localhost:9090  
+# - Grafana: http://localhost:3000 (admin/admin123)
 ```
 
 ### 🌐 Accessing API Endpoints
@@ -332,6 +347,92 @@ curl -X POST "http://localhost:8000/predict/batch" \
 - [x] **Modular Architecture**: Clean separation of concerns
 - [x] **Error Tracking**: Structured error logging
 - [x] **Database Storage**: SQLite for persistent metrics storage
+
+---
+
+## 🎯 BONUS FEATURES
+
+### ✅ Bonus Point 1: Add input validation using pydantic or schema.
+- **Pydantic Schemas**: Comprehensive input validation with business logic
+- **Field Validation**: Range checks, type validation, geographic bounds
+- **Error Messages**: Descriptive validation errors with suggestions
+- **API Documentation**: Auto-generated OpenAPI docs with examples
+
+### ✅ Bonus Point 2: Prometheus Integration & Sample Dashboard
+- **Essential Metrics**: Key ML model monitoring metrics for API performance
+- **Simple Dashboard**: 5-panel Grafana dashboard for core monitoring
+- **Docker Compose**: Basic monitoring stack (Prometheus + Grafana)
+- **Monitoring Endpoints**: `/prometheus` endpoint for metrics scraping
+
+### ✅ Bonus Point 3: Model Re-training Triggers
+- **Simple Trigger**: Retrain when sufficient new data available (50+ samples)
+- **API Endpoints**: Submit training data, check status, trigger retraining
+- **Basic Controls**: Rate limiting (2/day), validation, model backup
+- **DecisionTree Training**: Trains best-performing model from original evaluation
+
+---
+
+### Bonus Features Implementation Details
+
+#### Bonus Point 1: Enhanced Input Validation
+**Implementation**: Complete Pydantic schema validation with business logic checks.
+
+```python
+# Example validation in schemas.py
+MedInc: float = Field(..., ge=0.5, le=15.0, description="Median income")
+Latitude: float = Field(..., ge=32.5, le=41.95, description="California bounds")
+```
+
+**Features**:
+- Field range validation and type checking
+- Geographic bounds validation for California coordinates  
+- Descriptive error messages with suggestions
+- Auto-generated OpenAPI documentation
+
+#### Bonus Point 2: Prometheus Integration & Sample Dashboard
+**Implementation**: Essential monitoring stack with key metrics.
+
+**Custom Metrics**:
+- `housing_prediction_requests_total` - API request counts
+- `housing_prediction_duration_seconds` - Response time distribution
+- `housing_model_predictions_total` - Total predictions made
+- `housing_model_loaded` - Model status (0/1)
+- `housing_api_errors_total` - Error tracking
+- `housing_retraining_triggered_total` - Retraining events
+- `housing_new_data_points_total` - New training data points
+
+**Monitoring Stack**: Prometheus + Grafana with 5-panel dashboard
+- Total prediction requests counter
+- Response time (95th percentile)
+- Model status indicator
+- New training data tracking
+- Retraining events history
+
+#### Bonus Point 3: Model Re-training Triggers
+**Implementation**: Automated retraining system with new data submission.
+
+**API Endpoints**:
+```bash
+# Submit new training data
+POST /training/submit
+{
+  "features": {...},
+  "actual_price": 452600.0
+}
+
+# Check retraining status
+GET /training/status
+
+# Manual retraining trigger
+POST /training/trigger
+```
+
+**Retraining Process**:
+1. Data collection in CSV format
+2. Automatic trigger when ≥50 new samples collected
+3. DecisionTree model training (best performer)
+4. Model replacement with backup of old model
+5. Rate limiting (2 attempts/day) and validation
 
 ---
 

@@ -9,6 +9,7 @@ from datetime import datetime
 
 import numpy as np
 from fastapi import FastAPI, HTTPException, Request
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 # Import custom modules
 try:
@@ -25,6 +26,10 @@ try:
         PredictionResponse,
         BatchPredictionRequest,
         BatchPredictionResponse,
+        TrainingDataSubmission,
+        RetrainingTriggerRequest,
+        RetrainingStatusResponse,
+        RetrainingResponse,
     )
     from .models import (
         load_model,
@@ -38,6 +43,10 @@ try:
         calculate_prediction_range,
     )
     from .config import Config, logger
+    from .prometheus_metrics import (
+        setup_prometheus_monitoring,
+        get_prometheus_collector,
+    )
 except ImportError:
     # Fall back to direct imports (when run directly)
     from database import initialize_database, get_db_manager
@@ -52,6 +61,10 @@ except ImportError:
         PredictionResponse,
         BatchPredictionRequest,
         BatchPredictionResponse,
+        TrainingDataSubmission,
+        RetrainingTriggerRequest,
+        RetrainingStatusResponse,
+        RetrainingResponse,
     )
     from models import (
         load_model,
@@ -65,6 +78,8 @@ except ImportError:
         calculate_prediction_range,
     )
     from config import Config, logger
+    from prometheus_metrics import setup_prometheus_monitoring, get_prometheus_collector
+    from retraining import get_retraining_manager
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -72,6 +87,13 @@ app = FastAPI(
     description=Config.API_DESCRIPTION,
     version=Config.API_VERSION,
 )
+
+# Setup Prometheus monitoring
+prometheus_instrumentator = setup_prometheus_monitoring(app)
+prometheus_collector = get_prometheus_collector()
+
+# Initialize retraining manager
+retraining_manager = None
 
 
 # Middleware for request/response tracking
@@ -116,10 +138,28 @@ async def track_requests(request: Request, call_next):
 @app.on_event("startup")
 async def startup_event():
     """Initialize the model, database, and metrics on startup"""
+    global retraining_manager
+
     load_model()
     initialize_database(str(Config.get_db_path()))
     initialize_metrics()
-    logger.info("FastAPI application started successfully")
+
+    # Initialize retraining manager
+    retraining_manager = get_retraining_manager(
+        db_path=str(Config.get_db_path()),
+        models_dir=str(Config.get_models_dir()),
+        data_dir=str(Config.get_data_dir()),
+    )
+
+    # Expose Prometheus metrics endpoint
+    prometheus_instrumentator.expose(app, endpoint="/prometheus", tags=["monitoring"])
+
+    # Initialize Prometheus metrics
+    prometheus_collector.set_model_status(is_model_loaded())
+
+    logger.info(
+        "FastAPI application started successfully with Prometheus monitoring and retraining capabilities"
+    )
 
 
 @app.get("/")
@@ -134,6 +174,10 @@ async def root():
             "/predict/batch": "Batch predictions",
             "/health": "Health check",
             "/metrics": "API monitoring metrics",
+            "/prometheus": "Prometheus metrics",
+            "/training/submit": "Submit new training data",
+            "/training/status": "Get retraining status",
+            "/training/trigger": "Trigger model retraining",
             "/docs": "API documentation",
         },
     }
@@ -271,6 +315,10 @@ async def predict_single(features: HousingFeatures):
                 get_model_name(), float(prediction), confidence
             )
 
+            # Track Prometheus metrics
+            prometheus_collector.track_prediction_request("/predict")
+            prometheus_collector.track_model_prediction()
+
             # Calculate prediction range
             pred_range = calculate_prediction_range(prediction, confidence)
 
@@ -289,6 +337,11 @@ async def predict_single(features: HousingFeatures):
                 response_time=response_time,
                 model_used=get_model_name(),
                 endpoint="/predict",
+            )
+
+            # Track Prometheus duration
+            prometheus_collector.track_prediction_duration(
+                "/predict", get_model_name(), response_time
             )
 
             response = PredictionResponse(
@@ -318,6 +371,18 @@ async def predict_single(features: HousingFeatures):
                 endpoint="/predict",
                 error_message=error_message,
             )
+
+            # Track Prometheus error metrics
+            prometheus_collector.track_prediction_request(
+                "/predict", get_model_name(), "error"
+            )
+            prometheus_collector.track_api_error(
+                "/predict", "validation_error", he.status_code
+            )
+            prometheus_collector.track_prediction_duration(
+                "/predict", get_model_name(), response_time
+            )
+
             # Re-raise HTTP exceptions (validation errors)
             raise
         except Exception as e:
@@ -333,6 +398,16 @@ async def predict_single(features: HousingFeatures):
                 endpoint="/predict",
                 error_message=error_message,
             )
+
+            # Track Prometheus error metrics
+            prometheus_collector.track_prediction_request(
+                "/predict", get_model_name(), "error"
+            )
+            prometheus_collector.track_api_error("/predict", "internal_error", 500)
+            prometheus_collector.track_prediction_duration(
+                "/predict", get_model_name(), response_time
+            )
+
             logger.error(f"Error making prediction: {str(e)}")
             raise HTTPException(
                 status_code=500,
@@ -443,6 +518,12 @@ async def predict_batch(request: BatchPredictionRequest):
             # Track metrics
             metrics_tracker.track_prediction(len(predictions))
 
+            # Track Prometheus batch metrics
+            prometheus_collector.track_prediction_request(
+                "/predict/batch", get_model_name()
+            )
+            prometheus_collector.track_batch_size(len(predictions))
+
             # Calculate confidence scores and build detailed predictions
             detailed_predictions = []
             confidence_scores = []
@@ -460,6 +541,9 @@ async def predict_batch(request: BatchPredictionRequest):
                 model_metrics_tracker.track_model_prediction(
                     get_model_name(), float(pred), confidence
                 )
+
+                # Track Prometheus metrics for each prediction
+                prometheus_collector.track_model_prediction()
 
                 pred_range = calculate_prediction_range(pred, confidence)
 
@@ -494,6 +578,11 @@ async def predict_batch(request: BatchPredictionRequest):
                 endpoint="/predict/batch",
             )
 
+            # Track Prometheus batch duration
+            prometheus_collector.track_prediction_duration(
+                "/predict/batch", get_model_name(), response_time
+            )
+
             response = BatchPredictionResponse(
                 predictions=detailed_predictions,
                 model_used=get_model_name(),
@@ -516,6 +605,18 @@ async def predict_batch(request: BatchPredictionRequest):
                 endpoint="/predict/batch",
                 error_message=error_message,
             )
+
+            # Track Prometheus error metrics
+            prometheus_collector.track_prediction_request(
+                "/predict/batch", get_model_name(), "error"
+            )
+            prometheus_collector.track_api_error(
+                "/predict/batch", "validation_error", he.status_code
+            )
+            prometheus_collector.track_prediction_duration(
+                "/predict/batch", get_model_name(), response_time
+            )
+
             # Re-raise HTTP exceptions (validation errors)
             raise
         except Exception as e:
@@ -531,6 +632,18 @@ async def predict_batch(request: BatchPredictionRequest):
                 endpoint="/predict/batch",
                 error_message=error_message,
             )
+
+            # Track Prometheus error metrics
+            prometheus_collector.track_prediction_request(
+                "/predict/batch", get_model_name(), "error"
+            )
+            prometheus_collector.track_api_error(
+                "/predict/batch", "internal_error", 500
+            )
+            prometheus_collector.track_prediction_duration(
+                "/predict/batch", get_model_name(), response_time
+            )
+
             logger.error(f"Error making batch predictions: {str(e)}")
             raise HTTPException(
                 status_code=500,
@@ -542,6 +655,115 @@ async def predict_batch(request: BatchPredictionRequest):
                     ),
                 },
             )
+
+
+@app.post("/training/submit", response_model=RetrainingResponse, tags=["retraining"])
+async def submit_training_data(data: TrainingDataSubmission):
+    """
+    Submit new training data for future model retraining
+    """
+    try:
+        if retraining_manager is None:
+            raise HTTPException(
+                status_code=500, detail="Retraining manager not initialized"
+            )
+
+        # Convert features to dictionary and target
+        features_dict = data.features.dict()
+        actual_price = (
+            data.actual_price / 100
+        )  # Convert to hundreds of thousands (model format)
+
+        # Submit data to retraining manager
+        result = retraining_manager.add_training_data(features_dict, actual_price)
+
+        # Track Prometheus metrics
+        prometheus_collector.track_new_data_points(1)
+
+        return RetrainingResponse(
+            status=result["status"],
+            message=result["message"],
+            timestamp=datetime.now().isoformat(),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting training data: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to submit training data: {str(e)}"
+        )
+
+
+@app.get(
+    "/training/status", response_model=RetrainingStatusResponse, tags=["retraining"]
+)
+async def get_retraining_status():
+    """
+    Get current retraining status and recommendations
+    """
+    try:
+        if retraining_manager is None:
+            raise HTTPException(
+                status_code=500, detail="Retraining manager not initialized"
+            )
+
+        status = retraining_manager.get_retraining_status()
+
+        if "error" in status:
+            raise HTTPException(status_code=500, detail=status["error"])
+
+        return RetrainingStatusResponse(**status)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting retraining status: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get retraining status: {str(e)}"
+        )
+
+
+@app.post("/training/trigger", response_model=RetrainingResponse, tags=["retraining"])
+async def trigger_retraining(request: RetrainingTriggerRequest):
+    """
+    Manually trigger model retraining
+    """
+    try:
+        if retraining_manager is None:
+            raise HTTPException(
+                status_code=500, detail="Retraining manager not initialized"
+            )
+
+        # Check if we should force retraining
+        if not request.force:
+            status = retraining_manager.get_retraining_status()
+            if not status.get("should_retrain"):
+                return RetrainingResponse(
+                    status="skipped",
+                    message=f"Retraining not needed: {status.get('retrain_reason', 'conditions not met')}",
+                    timestamp=datetime.now().isoformat(),
+                )
+
+        # Start retraining (in background for larger models)
+        result = retraining_manager.trigger_retraining(request.reason)
+
+        # Track Prometheus metrics
+        prometheus_collector.track_retraining_trigger()
+
+        return RetrainingResponse(
+            status=result["status"],
+            message=result["message"],
+            timestamp=datetime.now().isoformat(),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error triggering retraining: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to trigger retraining: {str(e)}"
+        )
 
 
 if __name__ == "__main__":
