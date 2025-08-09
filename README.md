@@ -210,6 +210,17 @@ cd src && python api.py
 ```
 
 #### 3. Run with Docker
+##### a) Pull pre-built image from Docker Hub (recommended)
+
+Replace `<your-dockerhub-username>` and `<image-name>:<tag>` with the actual image name and tag if available.
+
+```bash
+docker pull <your-dockerhub-username>/california-housing-api:latest
+docker run -p 8000:8000 <your-dockerhub-username>/california-housing-api:latest
+```
+
+##### b) Build and run locally (if you want to use your own build)
+
 ```bash
 # Build Docker image
 docker build -t california-housing-api .
