@@ -54,6 +54,11 @@ class Config:
         """Get the SQLite database path"""
         return cls.get_logs_dir() / "predictions.db"
 
+    @classmethod
+    def get_data_dir(cls) -> Path:
+        """Get the data directory"""
+        return cls.get_project_root() / "data"
+
 
 def setup_logging():
     """Setup logging configuration"""
@@ -76,6 +81,7 @@ def setup_logging():
 def setup_directories():
     """Create necessary directories if they don't exist"""
     Config.get_models_dir().mkdir(exist_ok=True, parents=True)
+    Config.get_data_dir().mkdir(exist_ok=True, parents=True)
 
 
 # Initialize configuration on import

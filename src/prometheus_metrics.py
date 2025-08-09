@@ -49,6 +49,13 @@ new_data_points = Counter(
     "housing_new_data_points_total", "Total number of new training data points received"
 )
 
+# Batch prediction metrics
+batch_size_histogram = Histogram(
+    "housing_batch_size_total",
+    "Size of batch prediction requests",
+    buckets=[1, 5, 10, 25, 50, 100, 500, 1000],
+)
+
 
 class PrometheusMetricsCollector:
     """Simplified metrics collection for Prometheus"""
@@ -84,6 +91,10 @@ class PrometheusMetricsCollector:
         """Track new training data points"""
         new_data_points.inc(count)
 
+    def track_batch_size(self, size: int):
+        """Track batch prediction size"""
+        batch_size_histogram.observe(size)
+
 
 # Global metrics collector instance
 prometheus_collector = PrometheusMetricsCollector()
@@ -107,7 +118,15 @@ def setup_prometheus_monitoring(app: FastAPI) -> Instrumentator:
 
     # Add default metrics
     instrumentator.add(
-        metrics.request_size_and_response_size(
+        metrics.request_size(
+            should_include_handler=True,
+            should_include_method=True,
+            should_include_status=True,
+            metric_namespace="housing_api",
+            metric_subsystem="requests",
+        )
+    ).add(
+        metrics.response_size(
             should_include_handler=True,
             should_include_method=True,
             should_include_status=True,

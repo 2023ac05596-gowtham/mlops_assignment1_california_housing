@@ -21,8 +21,8 @@ stages:
       size: 1895154
     - path: src/data_preprocessing.py
       hash: md5
-      md5: 29210c0013bf1af28a7db8676f52d938
-      size: 445
+      md5: 10e054e377f64591a0cb64f4f108c7e6
+      size: 447
     outs:
     - path: data/processed/california_housing.csv
       hash: md5
@@ -37,13 +37,13 @@ stages:
       size: 1986071
     - path: src/train_model.py
       hash: md5
-      md5: e54052b91415008ebcc07abb56f6f0d8
-      size: 2572
+      md5: 89f2e97c622c6e84618544933031cb40
+      size: 2634
     outs:
     - path: mlruns/
       hash: md5
-      md5: 794e8db8ff84d183205a1d50ded3efd1.dir
-      size: 2294099
+      md5: a382a865b3790412f64574f3951e273c.dir
+      size: 2294078
       nfiles: 54
     - path: models/DecisionTree.pkl
       hash: md5
@@ -51,15 +51,15 @@ stages:
       size: 2285713
     - path: models/LinearRegression.pkl
       hash: md5
-      md5: 8f244e5aed2e784bf0e20981e502199a
+      md5: 694691b0d7c02e3d51a9cb7286e399f3
       size: 1033
   fetch_data:
     cmd: python src/fetch_data.py
     deps:
     - path: src/fetch_data.py
       hash: md5
-      md5: 3e362b79512875eaf44f20ddc53d6be2
-      size: 341
+      md5: 01d46910e3670d10b1acf80beb251594
+      size: 323
     outs:
     - path: data/raw/california_housing.csv
       hash: md5

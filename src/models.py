@@ -8,6 +8,7 @@ import os
 import logging
 import joblib
 import numpy as np
+import pandas as pd
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -67,9 +68,7 @@ def load_model():
 
     try:
         model = joblib.load(model_path)
-        logger.info(
-            f"Model {model_name} loaded successfully from {model_path}"
-        )
+        logger.info(f"Model {model_name} loaded successfully from {model_path}")
     except Exception as e:
         logger.error(f"Error loading model: {str(e)}")
         raise e
@@ -99,21 +98,33 @@ def make_prediction(feature_array):
 
 
 def prepare_feature_array(features):
-    """Prepare feature array from HousingFeatures object"""
-    return np.array(
-        [
-            [
-                features.MedInc,
-                features.HouseAge,
-                features.AveRooms,
-                features.AveBedrms,
-                features.Population,
-                features.AveOccup,
-                features.Latitude,
-                features.Longitude,
-            ]
-        ]
-    )
+    """Prepare feature array from HousingFeatures object with proper column names"""
+    # Create DataFrame with proper feature names to match training data
+    if isinstance(features, list):
+        # Handle batch of features
+        feature_data = {
+            "MedInc": [f.MedInc for f in features],
+            "HouseAge": [f.HouseAge for f in features],
+            "AveRooms": [f.AveRooms for f in features],
+            "AveBedrms": [f.AveBedrms for f in features],
+            "Population": [f.Population for f in features],
+            "AveOccup": [f.AveOccup for f in features],
+            "Latitude": [f.Latitude for f in features],
+            "Longitude": [f.Longitude for f in features],
+        }
+    else:
+        # Handle single feature
+        feature_data = {
+            "MedInc": [features.MedInc],
+            "HouseAge": [features.HouseAge],
+            "AveRooms": [features.AveRooms],
+            "AveBedrms": [features.AveBedrms],
+            "Population": [features.Population],
+            "AveOccup": [features.AveOccup],
+            "Latitude": [features.Latitude],
+            "Longitude": [features.Longitude],
+        }
+    return pd.DataFrame(feature_data)
 
 
 def validate_business_logic(features):
@@ -124,8 +135,7 @@ def validate_business_logic(features):
         errors.append(
             {
                 "error": (
-                    "Invalid input: Average bedrooms cannot exceed "
-                    "average rooms"
+                    "Invalid input: Average bedrooms cannot exceed " "average rooms"
                 ),
                 "suggestion": "Please ensure AveBedrms <= AveRooms",
             }
