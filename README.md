@@ -55,7 +55,16 @@ Implement a reproducible and trackable machine learning workflow using:
 │   ├── models.py                      # ML model operations & utilities
 │   ├── config.py                      # Configuration & logging setup
 │   ├── database.py                    # Database operations & SQLite management
-│   └── metrics.py                     # Metrics tracking & performance monitoring
+│   ├── metrics.py                     # Metrics tracking & performance monitoring
+│   ├── prometheus_metrics.py          # Prometheus metrics collection
+│   └── retraining.py                  # Model retraining functionality
+├── tests/                             # Tests                    
+├── monitoring/
+│   ├── prometheus.yml                 # Prometheus configuration
+│   └── grafana/
+│       ├── dashboards/
+│       │   └── housing-api-dashboard.json # Grafana dashboard
+│       └── provisioning/              # Grafana provisioning config
 ├── models/                            # Trained models (DVC managed)
 ├── logs/                              # Application logs & monitoring data
 │   ├── api_requests.log               # API request/response logs
@@ -64,8 +73,12 @@ Implement a reproducible and trackable machine learning workflow using:
 ├── dvc.lock                           # DVC pipeline lock file
 ├── requirements.txt                   # Python dependencies
 ├── Dockerfile                         # Docker containerization config
+├── docker-compose.monitoring.yml      # Monitoring stack compose file
 ├── .dockerignore                      # Docker ignore rules
 ├── run_api.sh                         # Script to run API locally
+├── run_tests.sh                       # Script to run tests
+├── run_tests_ci.sh                    # CI test script
+├── deploy.sh                          # Deployment script
 ├── .gitignore                         # Git ignore rules
 ├── .dvcignore                         # DVC ignore rules
 └── README.md                          # This file
@@ -85,6 +98,9 @@ Implement a reproducible and trackable machine learning workflow using:
 | **API Framework** | FastAPI | RESTful prediction service |
 | **API Server** | uvicorn | ASGI web server |
 | **Containerization** | Docker | Application packaging |
+| **CI/CD Pipeline** | GitHub Actions | Automated testing, building & deployment |
+| **Code Quality** | flake8 | Automated linting and code standards |
+| **Container Registry** | Docker Hub | Image hosting and distribution |
 | **Input Validation** | pydantic | API request/response validation |
 | **Database** | SQLite | Prediction logging & metrics storage |
 | **Monitoring** | Custom metrics | Performance & usage tracking |
@@ -339,6 +355,15 @@ curl -X POST "http://localhost:8000/predict/batch" \
 - [x] **Health checks** and logging for monitoring
 - [x] **JSON input/output** with proper error handling
 
+### ✅ Part 4: CI/CD with GitHub Actions
+- [x] **Automated Testing**: Multi-version Python testing (3.8, 3.9, 3.10, 3.11)
+- [x] **Code Linting**: Automated flake8 code quality checks
+- [x] **Docker Build & Push**: Automated Docker image build and push to Docker Hub
+- [x] **Deployment Pipeline**: Automated deployment using shell scripts
+- [x] **GitHub Actions Workflow**: Complete CI/CD pipeline on push to main branch
+- [x] **Test Coverage**: Comprehensive test execution with coverage reporting
+- [x] **Sequential Jobs**: Lint → Test → Build → Deploy pipeline structure
+
 ### ✅ Part 5: Logging and Monitoring
 - [x] **Essential Logging**: File-based and SQLite database logging
 - [x] **Prediction Tracking**: Complete tracking with confidence scores
@@ -436,10 +461,35 @@ POST /training/trigger
 
 ---
 
-## 📌 Upcoming (Part 4+)
-- CI/CD with GitHub Actions
-- Automated testing pipeline
-- Docker Hub integration
+## 🚀 CI/CD with GitHub Actions
+
+A complete CI/CD pipeline implemented using GitHub Actions that automatically tests, builds, and deploys the application on every push to the main branch.
+
+### Pipeline Triggers
+
+- Push to `main` branch
+- Sequential job execution (lint → test → build)
+- Fail-fast approach (stops on first failure)
+
+### Monitoring the Pipeline
+
+- Navigate to repository → **Actions** tab
+- View workflow runs, logs, and status
+- Monitor build times and success rates
+- Download artifacts and test results
+
+### Docker Hub Integration
+- **Repository**: `abhimanyuparashar/california-housing-api`
+- **Tags**: `latest` (automatic on successful builds)
+- **Size**: Optimized multi-stage build
+- **Architecture**: linux/amd64
+
+**Usage**:
+```bash
+# Pull and run the latest image
+docker pull abhimanyuparashar/california-housing-api:latest
+docker run -p 8000:8000 abhimanyuparashar/california-housing-api:latest
+```
 
 ---
 
@@ -496,6 +546,23 @@ curl http://localhost:8000/health
 
 # Or check API documentation
 open http://localhost:8000/docs
+```
+
+**7. CI/CD Pipeline Issues**
+```bash
+# Check GitHub Actions workflow
+# 1. Go to GitHub repository → Actions tab
+# 2. View latest workflow runs and logs
+
+# Test Docker build locally before pushing
+docker build -t test-build .
+
+# Verify deployment script works
+chmod +x deploy.sh
+./deploy.sh
+
+# Check if Docker Hub image exists
+docker pull abhimanyuparashar/california-housing-api:latest
 ```
 
 ---
