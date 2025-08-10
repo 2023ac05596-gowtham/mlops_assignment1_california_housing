@@ -81,7 +81,8 @@ Implement a reproducible and trackable machine learning workflow using:
 ├── deploy.sh                          # Deployment script
 ├── .gitignore                         # Git ignore rules
 ├── .dvcignore                         # DVC ignore rules
-└── README.md                          # This file
+├── README.md                          # This file
+└── MONITORING.md                      # Comprehensive monitoring guide
 ```
 
 ---
@@ -103,7 +104,7 @@ Implement a reproducible and trackable machine learning workflow using:
 | **Container Registry** | Docker Hub | Image hosting and distribution |
 | **Input Validation** | pydantic | API request/response validation |
 | **Database** | SQLite | Prediction logging & metrics storage |
-| **Monitoring** | Custom metrics | Performance & usage tracking |
+| **Monitoring** | Prometheus + Grafana | Real-time metrics & dashboards |
 | **Environment** | Python venv | Dependency isolation |
 
 ---
@@ -388,6 +389,8 @@ curl -X POST "http://localhost:8000/predict/batch" \
 - **Simple Dashboard**: 5-panel Grafana dashboard for core monitoring
 - **Docker Compose**: Basic monitoring stack (Prometheus + Grafana)
 - **Monitoring Endpoints**: `/prometheus` endpoint for metrics scraping
+
+📊 **[→ See Complete Monitoring Guide](MONITORING.md)** for detailed setup instructions, troubleshooting, and advanced usage.
 
 ### ✅ Bonus Point 3: Model Re-training Triggers
 - **Simple Trigger**: Retrain when sufficient new data available (50+ samples)
