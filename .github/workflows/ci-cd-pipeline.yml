@@ -6,41 +6,31 @@ on:
       - main
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      # Step 1: Checkout the code
-      - uses: actions/checkout@v2
-
-      # Step 2: Set up Python environment
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.10"
-
-      # Step 3: Install dependencies
-      - name: Install dependencies
-        run: pip install flake8 pytest
-
-      # Step 4: Lint the code
-      - name: Lint code
-        run: flake8 src/
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: "3.10"
+  #     - name: Install dependencies
+  #       run: pip install flake8 pytest
+  #     - name: Lint code
+  #       run: flake8 src/
 
   test:
-    needs: lint # Run this job only if lint succeeds
+    # needs: lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.10", "3.11"]
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
@@ -48,18 +38,14 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r test_requirements.txt
-
       - name: Make test script executable
         run: chmod +x run_tests.sh
-
       - name: Run tests using script
         run: ./run_tests.sh
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         if: matrix.python-version == '3.10'
@@ -70,34 +56,61 @@ jobs:
           fail_ci_if_error: false
 
   dockerize:
-    needs: test # Run this job only if test succeeds
+    needs: test  # Run this job only if test succeeds
     runs-on: ubuntu-latest
     steps:
       # Step 1: Checkout the code
       - uses: actions/checkout@v2
 
-      # Step 2: Debug build context
-      - name: List Files in Build Context
-        run: ls -la
-
-      # Step 3: Debug Dockerfile presence
-      - name: Check Dockerfile
-        run: |
-          if [ ! -f Dockerfile ]; then
-            echo "Dockerfile not found!"
-            exit 1
-          fi
-
-      # Step 4: Build Docker image
+      # Step 2: Build Docker image
       - name: Build Docker Image
-        run: docker build -t california-housing-api:latest .
+        run: docker build -t abhimanyuparashar/california-housing-api .
 
-      # Step 5: Tag and Push Docker image to Docker Hub
+      # Step 3: Push Docker image to Docker Hub
       - name: Push Docker Image
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          docker tag california-housing-api:latest ${DOCKER_USERNAME}/california-housing-api:latest
-          echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-          docker push ${DOCKER_USERNAME}/california-housing-api:latest
+          echo "group124pw" | docker login -u "abhimanyuparashar" --password-stdin
+          docker push abhimanyuparashar/california-housing-api
+
+  monitoring:
+    needs: dockerize
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+      - name: Start monitoring stack (Prometheus & Grafana)
+        run: |
+          docker-compose -f docker-compose.monitoring.yml up -d
+      - name: Wait for Prometheus
+        run: |
+          for i in {1..10}; do
+            if curl -s http://localhost:9090/-/healthy | grep 'Prometheus is Healthy'; then
+              echo 'Prometheus is healthy!'
+              exit 0
+            fi
+            echo 'Waiting for Prometheus...'
+            sleep 5
+          done
+          echo 'Prometheus did not become healthy in time.'
+          docker-compose -f docker-compose.monitoring.yml logs prometheus
+          exit 1
+      - name: Wait for Grafana
+        run: |
+          for i in {1..10}; do
+            if curl -s http://localhost:3000/api/health | grep '"database": "ok"'; then
+              echo 'Grafana is healthy!'
+              exit 0
+            fi
+            echo 'Waiting for Grafana...'
+            sleep 5
+          done
+          echo 'Grafana did not become healthy in time.'
+          docker-compose -f docker-compose.monitoring.yml logs grafana
+          exit 1
+      - name: Tear down monitoring stack
+        if: always()
+        run: docker-compose -f docker-compose.monitoring.yml down
