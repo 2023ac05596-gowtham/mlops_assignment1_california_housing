@@ -134,7 +134,7 @@ housing_batch_size_total
 ### Initial Configuration
 
 **Grafana** is pre-configured with:
-- **Datasource**: Prometheus at http://prometheus:9090
+- **Datasource**: Prometheus at http://localhost:9090
 - **Dashboard**: California Housing API monitoring dashboard
 - **Admin User**: admin / admin123
 
