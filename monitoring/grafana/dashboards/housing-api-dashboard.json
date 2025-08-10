@@ -142,9 +142,9 @@
                         "type": "prometheus",
                         "uid": "prometheus-datasource"
                     },
-                    "expr": "rate(housing_api_requests_http_request_duration_seconds_sum[5m]) / rate(housing_api_requests_http_request_duration_seconds_count[5m]) * 1000",
+                    "expr": "rate(housing_api_requests_http_request_duration_seconds_sum{handler=~\"/predict.*\",status=\"200\"}[5m]) / rate(housing_api_requests_http_request_duration_seconds_count{handler=~\"/predict.*\",status=\"200\"}[5m]) * 1000",
                     "interval": "",
-                    "legendFormat": "Avg Response Time - {{endpoint}}",
+                    "legendFormat": "{{handler}}",
                     "refId": "A"
                 }
             ],
