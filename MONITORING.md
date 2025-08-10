@@ -12,9 +12,7 @@ This guide provides comprehensive instructions for setting up and using **Promet
 - [📊 Prometheus Setup](#-prometheus-setup)
 - [📈 Grafana Setup](#-grafana-setup)
 - [📏 Available Metrics](#-available-metrics)
-- [🎨 Dashboard Guide](#-dashboard-guide)
 - [🔧 Troubleshooting](#-troubleshooting)
-- [💡 Advanced Usage](#-advanced-usage)
 
 ---
 
