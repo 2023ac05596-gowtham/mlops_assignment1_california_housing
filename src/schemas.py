@@ -92,10 +92,7 @@ class PredictionResponse(BaseModel):
 
     predicted_price: float = Field(
         ...,
-        description=(
-            "Predicted median house value in USD "
-            "(United States Dollars)"
-        ),
+        description=("Predicted median house value in USD " "(United States Dollars)"),
     )
     confidence_score: float = Field(
         ..., description="Prediction confidence score (0-1, higher is better)"
@@ -125,8 +122,7 @@ class BatchPredictionResponse(BaseModel):
     predictions: List[dict] = Field(
         ...,
         description=(
-            "List of prediction results with confidence scores "
-            "(prices in USD)"
+            "List of prediction results with confidence scores " "(prices in USD)"
         ),
     )
     model_used: str = Field(..., description="Model used for predictions")
@@ -162,6 +158,50 @@ class TrainingDataSubmission(BaseModel):
                     "Longitude": -122.23,
                 },
                 "actual_price": 452600.0,
+            }
+        }
+
+
+class BatchTrainingDataSubmission(BaseModel):
+    """
+    Schema for submitting multiple training data samples
+    """
+
+    training_data: List[TrainingDataSubmission] = Field(
+        ..., description="List of training data samples", min_items=1, max_items=100
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "training_data": [
+                    {
+                        "features": {
+                            "MedInc": 8.33,
+                            "HouseAge": 41.0,
+                            "AveRooms": 6.98,
+                            "AveBedrms": 1.02,
+                            "Population": 322.0,
+                            "AveOccup": 2.56,
+                            "Latitude": 37.88,
+                            "Longitude": -122.23,
+                        },
+                        "actual_price": 452600.0,
+                    },
+                    {
+                        "features": {
+                            "MedInc": 7.25,
+                            "HouseAge": 35.0,
+                            "AveRooms": 5.85,
+                            "AveBedrms": 0.98,
+                            "Population": 285.0,
+                            "AveOccup": 2.12,
+                            "Latitude": 36.75,
+                            "Longitude": -121.48,
+                        },
+                        "actual_price": 389000.0,
+                    },
+                ]
             }
         }
 
@@ -208,3 +248,18 @@ class RetrainingResponse(BaseModel):
     status: str = Field(..., description="Operation status (success/error)")
     message: str = Field(..., description="Operation result message")
     timestamp: str = Field(..., description="Response timestamp")
+
+
+class BatchRetrainingResponse(BaseModel):
+    """
+    Response schema for batch training data submission
+    """
+
+    status: str = Field(..., description="Overall operation status (success/error)")
+    message: str = Field(..., description="Operation result message")
+    timestamp: str = Field(..., description="Response timestamp")
+    samples_added: int = Field(..., description="Number of samples successfully added")
+    total_samples: int = Field(..., description="Total samples now in training dataset")
+    failed_samples: int = Field(
+        default=0, description="Number of samples that failed validation"
+    )

@@ -126,6 +126,99 @@ class ModelRetrainingManager:
                 "message": f"Failed to add training data: {str(e)}",
             }
 
+    def add_training_data_batch(
+        self, training_samples: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Add multiple training data points in batch
+        """
+        try:
+            samples_added = 0
+            failed_samples = 0
+            failed_reasons = []
+
+            # Process each sample
+            new_rows = []
+            for i, sample in enumerate(training_samples):
+                try:
+                    features = sample["features"]
+                    target = sample["actual_price"] / 100  # Convert to model format
+
+                    # Create new data row
+                    new_row = {
+                        "MedInc": features["MedInc"],
+                        "HouseAge": features["HouseAge"],
+                        "AveRooms": features["AveRooms"],
+                        "AveBedrms": features["AveBedrms"],
+                        "Population": features["Population"],
+                        "AveOccup": features["AveOccup"],
+                        "Latitude": features["Latitude"],
+                        "Longitude": features["Longitude"],
+                        "target": target,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                    new_rows.append(new_row)
+                    samples_added += 1
+
+                except Exception as e:
+                    failed_samples += 1
+                    failed_reasons.append(f"Sample {i}: {str(e)}")
+                    logger.warning(f"Failed to process sample {i}: {str(e)}")
+
+            # Add all valid samples to CSV at once
+            if new_rows:
+                new_df = pd.DataFrame(new_rows)
+                if (
+                    self.new_data_file.exists()
+                    and self.new_data_file.stat().st_size > 0
+                ):
+                    new_df.to_csv(
+                        self.new_data_file, mode="a", header=False, index=False
+                    )
+                else:
+                    new_df.to_csv(self.new_data_file, index=False)
+
+            # Get current count of new samples
+            current_data = (
+                pd.read_csv(self.new_data_file)
+                if self.new_data_file.exists()
+                else pd.DataFrame()
+            )
+            new_sample_count = len(current_data)
+
+            logger.info(
+                f"Batch processed: {samples_added} samples added, {failed_samples} failed. Total new samples: {new_sample_count}"
+            )
+
+            # Check if retraining should be triggered
+            should_retrain, reason = self._should_trigger_retraining(new_sample_count)
+
+            status = "success" if failed_samples == 0 else "partial_success"
+            message = f"Batch processed: {samples_added} samples added"
+            if failed_samples > 0:
+                message += f", {failed_samples} failed"
+
+            return {
+                "status": status,
+                "message": message,
+                "samples_added": samples_added,
+                "total_samples": new_sample_count,
+                "failed_samples": failed_samples,
+                "failed_reasons": failed_reasons[:5],  # Limit error details
+                "should_retrain": should_retrain,
+                "retrain_reason": reason if should_retrain else None,
+            }
+
+        except Exception as e:
+            logger.error(f"Error adding batch training data: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"Failed to add batch training data: {str(e)}",
+                "samples_added": 0,
+                "total_samples": 0,
+                "failed_samples": len(training_samples),
+            }
+
     def _should_trigger_retraining(self, new_sample_count: int) -> Tuple[bool, str]:
         """
         Determine if retraining should be triggered
