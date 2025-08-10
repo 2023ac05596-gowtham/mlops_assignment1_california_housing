@@ -78,10 +78,10 @@ jobs:
 
       # Step 2: Build Docker image
       - name: Build Docker Image
-        run: docker build -t abhimanyuparashar/california-housing-api .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/california-housing-api .
 
       # Step 3: Push Docker image to Docker Hub
       - name: Push Docker Image
         run: |
-          echo "group124pw" | docker login -u "abhimanyuparashar" --password-stdin
-          docker push abhimanyuparashar/california-housing-api
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker push ${{ secrets.DOCKER_USERNAME }}/california-housing-api
