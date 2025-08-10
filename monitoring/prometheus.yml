@@ -11,14 +11,6 @@ scrape_configs:
   scrape_interval: 10s
   scrape_timeout: 5s
 
-# Additional FastAPI metrics endpoint
-- job_name: 'housing-api-metrics'
-  static_configs:
-  - targets: [ 'housing-api:8000' ]
-  metrics_path: '/metrics'
-  scrape_interval: 15s
-  scrape_timeout: 5s
-
 # Prometheus itself
 - job_name: 'prometheus'
   static_configs:

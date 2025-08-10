@@ -12,7 +12,7 @@
         {
             "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "prometheus-datasource"
             },
             "fieldConfig": {
                 "defaults": {
@@ -56,7 +56,7 @@
                 {
                     "datasource": {
                         "type": "prometheus",
-                        "uid": "${DS_PROMETHEUS}"
+                        "uid": "prometheus-datasource"
                     },
                     "expr": "sum(housing_prediction_requests_total)",
                     "interval": "",
@@ -70,7 +70,7 @@
         {
             "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "prometheus-datasource"
             },
             "fieldConfig": {
                 "defaults": {
@@ -115,7 +115,7 @@
                             }
                         ]
                     },
-                    "unit": "s"
+                    "unit": "ms"
                 }
             },
             "gridPos": {
@@ -140,21 +140,21 @@
                 {
                     "datasource": {
                         "type": "prometheus",
-                        "uid": "${DS_PROMETHEUS}"
+                        "uid": "prometheus-datasource"
                     },
-                    "expr": "histogram_quantile(0.95, sum(rate(housing_prediction_duration_seconds_bucket[5m])) by (le, endpoint))",
+                    "expr": "rate(housing_api_requests_http_request_duration_seconds_sum[5m]) / rate(housing_api_requests_http_request_duration_seconds_count[5m]) * 1000",
                     "interval": "",
-                    "legendFormat": "95th percentile - {{endpoint}}",
+                    "legendFormat": "Avg Response Time - {{endpoint}}",
                     "refId": "A"
                 }
             ],
-            "title": "Response Time (95th percentile)",
+            "title": "Average Response Time",
             "type": "timeseries"
         },
         {
             "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "prometheus-datasource"
             },
             "fieldConfig": {
                 "defaults": {
@@ -214,7 +214,7 @@
                 {
                     "datasource": {
                         "type": "prometheus",
-                        "uid": "${DS_PROMETHEUS}"
+                        "uid": "prometheus-datasource"
                     },
                     "expr": "housing_model_loaded",
                     "interval": "",
@@ -228,7 +228,7 @@
         {
             "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "prometheus-datasource"
             },
             "fieldConfig": {
                 "defaults": {
@@ -272,21 +272,21 @@
                 {
                     "datasource": {
                         "type": "prometheus",
-                        "uid": "${DS_PROMETHEUS}"
+                        "uid": "prometheus-datasource"
                     },
-                    "expr": "housing_new_data_points_total",
+                    "expr": "housing_model_predictions_total",
                     "interval": "",
                     "legendFormat": "",
                     "refId": "A"
                 }
             ],
-            "title": "New Training Data Points",
+            "title": "Total Model Predictions",
             "type": "stat"
         },
         {
             "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "prometheus-datasource"
             },
             "fieldConfig": {
                 "defaults": {
@@ -330,7 +330,7 @@
                 {
                     "datasource": {
                         "type": "prometheus",
-                        "uid": "${DS_PROMETHEUS}"
+                        "uid": "prometheus-datasource"
                     },
                     "expr": "housing_retraining_triggered_total",
                     "interval": "",
@@ -342,7 +342,7 @@
             "type": "stat"
         }
     ],
-    "refresh": "30s",
+    "refresh": "5s",
     "schemaVersion": 36,
     "style": "dark",
     "tags": [
@@ -353,7 +353,7 @@
         "list": []
     },
     "time": {
-        "from": "now-1h",
+        "from": "now-5m",
         "to": "now"
     },
     "timepicker": {},
