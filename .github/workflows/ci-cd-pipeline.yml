@@ -69,18 +69,30 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
 
-  dockerize:
+dockerize:
     needs: test  # Run this job only if test succeeds
     runs-on: ubuntu-latest
     steps:
       # Step 1: Checkout the code
       - uses: actions/checkout@v2
 
-      # Step 2: Build Docker image
+      # Step 2: Debug build context
+      - name: List Files in Build Context
+        run: ls -la
+
+      # Step 3: Debug Dockerfile presence
+      - name: Check Dockerfile
+        run: |
+          if [ ! -f Dockerfile ]; then
+            echo "Dockerfile not found!"
+            exit 1
+          fi
+
+      # Step 4: Build Docker image
       - name: Build Docker Image
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/california-housing-api .
 
-      # Step 3: Push Docker image to Docker Hub
+      # Step 5: Push Docker image to Docker Hub
       - name: Push Docker Image
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
