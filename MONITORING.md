@@ -16,7 +16,7 @@ Real-time monitoring for the California Housing ML API using Prometheus for metr
 │   (Port 8000)   │    │   (Port 9090)   │    │   (Port 3000)   │
 │                 │    │                 │    │                 │
 │ /prometheus ────┼───►│ Scrapes metrics │    │ Queries metrics │
-│ /predict        │    │ every 5s        │    │ & renders       │
+│ /predict        │    │ every 15s       │    │ & renders       │
 │ /predict/batch  │    │                 │    │ dashboards      │
 │ /training/*     │    │ Stores time-    │◄───┤                 │
 │                 │    │ series data     │    │                 │
@@ -58,42 +58,49 @@ curl -X POST "http://localhost:8000/predict/batch" \
 ## Key Prometheus Queries
 
 ```promql
-# Total requests
+# Total prediction requests
 sum(housing_prediction_requests_total)
 
-# Response time
-housing_prediction_duration_seconds_sum / housing_prediction_duration_seconds_count
+# Average response time (filtered for successful requests)
+rate(housing_api_requests_http_request_duration_seconds_sum{handler=~"/predict.*",status="200"}[5m]) / rate(housing_api_requests_http_request_duration_seconds_count{handler=~"/predict.*",status="200"}[5m]) * 1000
 
 # Model status (1 = loaded)
 housing_model_loaded
 
-# Total predictions
+# Total model predictions
 housing_model_predictions_total
 
-# Retraining events
+# Model retraining events
 housing_retraining_triggered_total
+
+# Error rate (4xx/5xx errors per second)
+sum(rate(housing_api_http_http_requests_total{handler=~"/predict.*",status=~"4.*|5.*"}[5m]))
+
+# Success rate percentage
+(sum(rate(housing_api_http_http_requests_total{handler=~"/predict.*",status="200"}[5m])) / sum(rate(housing_api_http_http_requests_total{handler=~"/predict.*"}[5m]))) * 100
 ```
 
 ## Grafana Dashboard
 
-Pre-configured dashboard with 5 panels:
-1. **Total Requests** - Cumulative API calls
-2. **Response Time** - Average API latency
-3. **Model Status** - Model loaded status (1=loaded)
-4. **Total Predictions** - Model predictions count
-5. **Retraining Events** - Model retrain triggers
+Pre-configured dashboard with 7 panels:
+1. **Total Prediction Requests** - Cumulative API requests to prediction endpoints
+2. **Average Response Time** - API latency in milliseconds (successful requests only)
+3. **Model Status** - Model loaded status (1=loaded, 0=not loaded)
+4. **Total Model Predictions** - Total predictions made by the ML model
+5. **Model Retraining Events** - Number of model retrain triggers
+6. **Error Rate** - Failed requests per second (4xx/5xx errors)
+7. **Success Rate** - Percentage of successful API calls
 
 ## Available Metrics
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `housing_prediction_requests_total` | Counter | Total API requests |
-| `housing_model_predictions_total` | Counter | Total model predictions |
-| `housing_prediction_duration_seconds` | Histogram | Response time |
-| `housing_model_loaded` | Gauge | Model status (1=loaded) |
-| `housing_retraining_triggered_total` | Counter | Retraining events |
-| `housing_new_data_points_total` | Counter | New training data |
-| `housing_api_errors_total` | Counter | API errors |
+| `housing_prediction_requests_total` | Counter | Total API requests to prediction endpoints |
+| `housing_model_predictions_total` | Counter | Total predictions made by ML model |
+| `housing_model_loaded` | Gauge | Model load status (1=loaded, 0=not loaded) |
+| `housing_retraining_triggered_total` | Counter | Model retraining events triggered |
+| `housing_api_requests_http_request_duration_seconds` | Histogram | HTTP request duration for all endpoints |
+| `housing_api_http_http_requests_total` | Counter | Total HTTP requests by endpoint and status |
 
 ## Troubleshooting
 
