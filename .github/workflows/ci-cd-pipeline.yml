@@ -75,11 +75,11 @@ jobs:
       steps:
         # Step 1: Checkout the code
         - uses: actions/checkout@v2
-  
+
         # Step 2: Debug build context
         - name: List Files in Build Context
           run: ls -la
-  
+
         # Step 3: Debug Dockerfile presence
         - name: Check Dockerfile
           run: |
@@ -87,11 +87,11 @@ jobs:
               echo "Dockerfile not found!"
               exit 1
             fi
-  
+
         # Step 4: Build Docker image
         - name: Build Docker Image
-          run: docker build -t ${{ secrets.DOCKER_USERNAME }}/california-housing-api .
-  
+          run: docker build --disable-buildkit -t ${{ secrets.DOCKER_USERNAME }}/california-housing-api .
+
         # Step 5: Push Docker image to Docker Hub
         - name: Push Docker Image
           run: |
