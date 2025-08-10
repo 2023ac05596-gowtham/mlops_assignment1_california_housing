@@ -56,6 +56,30 @@ batch_size_histogram = Histogram(
     buckets=[1, 5, 10, 25, 50, 100, 500, 1000],
 )
 
+# Batch training metrics
+training_batch_requests_total = Counter(
+    "housing_training_batch_requests_total",
+    "Total number of batch training requests",
+    ["status"],
+)
+
+training_batch_size_histogram = Histogram(
+    "housing_training_batch_size",
+    "Size of training batch requests",
+    buckets=[1, 5, 10, 25, 50, 100],
+)
+
+training_samples_failed_total = Counter(
+    "housing_training_samples_failed_total",
+    "Total number of training samples that failed validation",
+)
+
+training_data_validation_errors = Counter(
+    "housing_training_validation_errors_total",
+    "Training data validation errors by type",
+    ["error_type"],
+)
+
 
 class PrometheusMetricsCollector:
     """Simplified metrics collection for Prometheus"""
@@ -94,6 +118,22 @@ class PrometheusMetricsCollector:
     def track_batch_size(self, size: int):
         """Track batch prediction size"""
         batch_size_histogram.observe(size)
+
+    def track_training_batch_request(self, status: str = "success"):
+        """Track training batch requests"""
+        training_batch_requests_total.labels(status=status).inc()
+
+    def track_training_batch_size(self, size: int):
+        """Track training batch size"""
+        training_batch_size_histogram.observe(size)
+
+    def track_training_samples_failed(self, count: int = 1):
+        """Track failed training samples"""
+        training_samples_failed_total.inc(count)
+
+    def track_training_validation_error(self, error_type: str):
+        """Track training data validation errors"""
+        training_data_validation_errors.labels(error_type=error_type).inc()
 
 
 # Global metrics collector instance
@@ -138,7 +178,7 @@ def setup_prometheus_monitoring(app: FastAPI) -> Instrumentator:
     instrumentator.add(
         metrics.latency(
             should_include_handler=True,
-            should_include_method=True,
+            should_include_method=False,
             should_include_status=True,
             metric_namespace="housing_api",
             metric_subsystem="requests",

@@ -29,9 +29,11 @@ try:
         BatchPredictionRequest,
         BatchPredictionResponse,
         TrainingDataSubmission,
+        BatchTrainingDataSubmission,
         RetrainingTriggerRequest,
         RetrainingStatusResponse,
         RetrainingResponse,
+        BatchRetrainingResponse,
     )
     from .models import (
         load_model,
@@ -65,9 +67,11 @@ except ImportError:
         BatchPredictionRequest,
         BatchPredictionResponse,
         TrainingDataSubmission,
+        BatchTrainingDataSubmission,
         RetrainingTriggerRequest,
         RetrainingStatusResponse,
         RetrainingResponse,
+        BatchRetrainingResponse,
     )
     from models import (
         load_model,
@@ -186,6 +190,7 @@ async def root():
             "/metrics": "API monitoring metrics",
             "/prometheus": "Prometheus metrics",
             "/training/submit": "Submit new training data",
+            "/training/submit/batch": "Submit batch training data",
             "/training/status": "Get retraining status",
             "/training/trigger": "Trigger model retraining",
             "/docs": "API documentation",
@@ -679,6 +684,68 @@ async def submit_training_data(data: TrainingDataSubmission):
         logger.error(f"Error submitting training data: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Failed to submit training data: {str(e)}"
+        )
+
+
+@app.post(
+    "/training/submit/batch",
+    response_model=BatchRetrainingResponse,
+    tags=["retraining"],
+)
+async def submit_training_data_batch(data: BatchTrainingDataSubmission):
+    """
+    Submit multiple training data samples for future model retraining
+    """
+    try:
+        if retraining_manager is None:
+            raise HTTPException(
+                status_code=500, detail="Retraining manager not initialized"
+            )
+
+        # Convert to format expected by retraining manager
+        training_samples = []
+        for sample in data.training_data:
+            training_samples.append(
+                {
+                    "features": sample.features.dict(),
+                    "actual_price": sample.actual_price,
+                }
+            )
+
+        # Submit batch data to retraining manager
+        result = retraining_manager.add_training_data_batch(training_samples)
+
+        # Track Prometheus metrics
+        collector = get_prometheus_collector()
+        collector.track_new_data_points(result["samples_added"])
+        collector.track_training_batch_request(
+            "success"
+            if result["status"] in ["success", "partial_success"]
+            else "failed"
+        )
+        collector.track_training_batch_size(len(training_samples))
+        if result["failed_samples"] > 0:
+            collector.track_training_samples_failed(result["failed_samples"])
+
+        return BatchRetrainingResponse(
+            status=result["status"],
+            message=result["message"],
+            timestamp=datetime.now().isoformat(),
+            samples_added=result["samples_added"],
+            total_samples=result["total_samples"],
+            failed_samples=result["failed_samples"],
+        )
+
+    except HTTPException as e:
+        # Track failed batch request
+        get_prometheus_collector().track_training_batch_request("failed")
+        raise
+    except Exception as e:
+        # Track failed batch request
+        get_prometheus_collector().track_training_batch_request("failed")
+        logger.error(f"Error submitting batch training data: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to submit batch training data: {str(e)}"
         )
 
 

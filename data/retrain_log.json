@@ -1,0 +1,22 @@
+[
+  {
+    "timestamp": "2025-08-10T16:42:20.766590",
+    "date": "2025-08-10",
+    "reason": "manual_trigger",
+    "model_name": "DecisionTree",
+    "success": true,
+    "duration_seconds": 3.5274620056152344,
+    "rmse": 72.98207692512987,
+    "r2_score": 0.9201325402746572
+  },
+  {
+    "timestamp": "2025-08-10T16:48:52.523776",
+    "date": "2025-08-10",
+    "reason": "manual_trigger",
+    "model_name": "DecisionTree",
+    "success": true,
+    "duration_seconds": 3.4794554710388184,
+    "rmse": 69.89621879458494,
+    "r2_score": 0.9128860417807563
+  }
+]

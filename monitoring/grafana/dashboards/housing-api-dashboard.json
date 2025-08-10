@@ -300,10 +300,20 @@
                             {
                                 "color": "green",
                                 "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 1
+                            },
+                            {
+                                "color": "red",
+                                "value": 5
                             }
                         ]
-                    }
-                }
+                    },
+                    "unit": "reqps"
+                },
+                "overrides": []
             },
             "gridPos": {
                 "h": 4,
@@ -332,80 +342,7 @@
                         "type": "prometheus",
                         "uid": "prometheus-datasource"
                     },
-                    "expr": "housing_retraining_triggered_total",
-                    "interval": "",
-                    "legendFormat": "",
-                    "refId": "A"
-                }
-            ],
-            "title": "Model Retraining Events",
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus-datasource"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "custom": {
-                        "align": "auto",
-                        "displayMode": "auto",
-                        "inspect": false
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "red",
-                                "value": 5
-                            }
-                        ]
-                    },
-                    "unit": "reqps"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 6,
-                "x": 18,
-                "y": 8
-            },
-            "id": 7,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "textMode": "auto"
-            },
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "prometheus",
-                        "uid": "prometheus-datasource"
-                    },
-                    "expr": "sum(rate(housing_api_http_http_requests_total{handler=~\"/predict.*\",status=~\"4.*|5.*\"}[5m]))",
+                    "expr": "sum(rate(housing_api_http_http_requests_total{handler=~\"/predict.*\",status=~\"4.*|5.*\"}[5m])) or vector(0)",
                     "interval": "",
                     "legendFormat": "Errors/sec",
                     "refId": "A"
@@ -448,11 +385,11 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 12,
-                "x": 6,
-                "y": 12
+                "w": 6,
+                "x": 18,
+                "y": 8
             },
-            "id": 8,
+            "id": 6,
             "options": {
                 "colorMode": "value",
                 "graphMode": "area",
@@ -481,6 +418,205 @@
             ],
             "title": "Success Rate",
             "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 0,
+                "y": 12
+            },
+            "id": 7,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus-datasource"
+                    },
+                    "expr": "housing_retraining_triggered_total",
+                    "interval": "",
+                    "legendFormat": "",
+                    "refId": "A"
+                }
+            ],
+            "title": "Model Retraining Events",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 8,
+                "y": 12
+            },
+            "id": 8,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus-datasource"
+                    },
+                    "expr": "housing_new_data_points_total",
+                    "interval": "",
+                    "legendFormat": "Data Points",
+                    "refId": "A"
+                }
+            ],
+            "title": "Training Data Points Collected",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "bars",
+                        "fillOpacity": 80,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "vis": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "blue",
+                                "value": null
+                            }
+                        ]
+                    }
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 16,
+                "y": 12
+            },
+            "id": 9,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus-datasource"
+                    },
+                    "expr": "housing_training_batch_requests_total or vector(0)",
+                    "interval": "",
+                    "legendFormat": "{{status}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Batch Training Requests",
+            "type": "timeseries"
         }
     ],
     "refresh": "5s",
