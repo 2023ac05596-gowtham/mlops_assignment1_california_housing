@@ -537,7 +537,7 @@ docker pull abhimanyuparashar/california-housing-api:latest
 
 ## 👨‍💻 Authors
 
-**Gowtham Raj R.** | **Shipra Sahu**
+**Gowtham Raj R.** | **Shipra Sahu** | **Abhimanyu Parashar** | **Lubna Taj C N**
 
 ---
 
@@ -547,5 +547,6 @@ For questions regarding this assignment implementation:
 - Review MLflow experiments at `http://localhost:5000`
 - Check DVC pipeline status with `dvc status`
 - Validate setup with `dvc repro`
+- Monitor API at `http://localhost:8000/docs`
 
 ---
