@@ -2,7 +2,7 @@
 
 This repository contains a complete MLOps pipeline for predicting California housing prices using the `California Housing` dataset.
 
-Name and BITS ID of the active contributors in this assignment: (**Group 89**)
+Name and BITS ID of the active contributors in this assignment: (**Group 124**)
 
 | Name                | BitsID      | Contribution (%)               |
 | ------------------- | ----------- | ------------------------------ |
