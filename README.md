@@ -7,7 +7,7 @@ Name and BITS ID of the active contributors in this assignment: (**Group 124**)
 | Name                | BitsID      | Contribution (%)               |
 | ------------------- | ----------- | ------------------------------ |
 | Shipra Sahu         | 2023ac05804 | <div align="center">100%</div> |
-| Gowtham             |             | <div align="center">100%</div> |
+| Gowtham Raj R       | 2023ac05596 | <div align="center">100%</div> |
 | Abhimanyu Parashar  | 2023ac05580 | <div align="center">100%</div> |
 | Lubna Taj C N       | 2023ac05781 | <div align="center">100%</div> |
 
