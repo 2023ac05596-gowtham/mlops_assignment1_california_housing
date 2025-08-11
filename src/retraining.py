@@ -4,22 +4,17 @@ Model re-training functionality for California Housing API
 Handles new data submission and automated retraining triggers
 """
 
-import os
 import logging
 import joblib
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
-from sklearn.ensemble import RandomForestRegressor
+from typing import List, Dict, Any, Tuple
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-import sqlite3
 import json
-import threading
 import time
 
 # Setup logger
@@ -95,8 +90,16 @@ class ModelRetrainingManager:
 
             # Append to CSV
             new_df = pd.DataFrame([new_row])
-            if self.new_data_file.exists() and self.new_data_file.stat().st_size > 0:
-                new_df.to_csv(self.new_data_file, mode="a", header=False, index=False)
+            if (
+                self.new_data_file.exists()
+                and self.new_data_file.stat().st_size > 0
+            ):
+                new_df.to_csv(
+                    self.new_data_file,
+                    mode="a",
+                    header=False,
+                    index=False
+                )
             else:
                 new_df.to_csv(self.new_data_file, index=False)
 
@@ -105,15 +108,18 @@ class ModelRetrainingManager:
             new_sample_count = len(current_data)
 
             logger.info(
-                f"Added new training sample. Total new samples: {new_sample_count}"
+                f"Added new training sample. "
+                f"Total new samples: {new_sample_count}"
             )
 
             # Check if retraining should be triggered
-            should_retrain, reason = self._should_trigger_retraining(new_sample_count)
+            should_retrain, reason = self._should_trigger_retraining(
+                new_sample_count
+            )
 
             return {
                 "status": "success",
-                "message": f"Training data added successfully",
+                "message": "Training data added successfully",
                 "new_samples_count": new_sample_count,
                 "should_retrain": should_retrain,
                 "retrain_reason": reason if should_retrain else None,
@@ -142,7 +148,9 @@ class ModelRetrainingManager:
             for i, sample in enumerate(training_samples):
                 try:
                     features = sample["features"]
-                    target = sample["actual_price"] / 100  # Convert to model format
+                    target = (
+                        sample["actual_price"] / 100
+                    )  # Convert to model format
 
                     # Create new data row
                     new_row = {
@@ -187,11 +195,15 @@ class ModelRetrainingManager:
             new_sample_count = len(current_data)
 
             logger.info(
-                f"Batch processed: {samples_added} samples added, {failed_samples} failed. Total new samples: {new_sample_count}"
+                f"Batch processed: {samples_added} samples added, "
+                f"{failed_samples} failed. "
+                f"Total new samples: {new_sample_count}"
             )
 
             # Check if retraining should be triggered
-            should_retrain, reason = self._should_trigger_retraining(new_sample_count)
+            should_retrain, reason = self._should_trigger_retraining(
+                new_sample_count
+            )
 
             status = "success" if failed_samples == 0 else "partial_success"
             message = f"Batch processed: {samples_added} samples added"
@@ -219,7 +231,9 @@ class ModelRetrainingManager:
                 "failed_samples": len(training_samples),
             }
 
-    def _should_trigger_retraining(self, new_sample_count: int) -> Tuple[bool, str]:
+    def _should_trigger_retraining(
+        self, new_sample_count: int
+    ) -> Tuple[bool, str]:
         """
         Determine if retraining should be triggered
         """
@@ -227,7 +241,10 @@ class ModelRetrainingManager:
         if new_sample_count >= self.min_new_samples:
             return (
                 True,
-                f"Minimum samples threshold reached ({new_sample_count} >= {self.min_new_samples})",
+                (
+                    f"Minimum samples threshold reached "
+                    f"({new_sample_count} >= {self.min_new_samples})"
+                ),
             )
 
         return False, "Not enough new samples for retraining"
@@ -245,7 +262,7 @@ class ModelRetrainingManager:
                 if entry.get("date", "").startswith(today)
             ]
             return len(today_attempts)
-        except:
+        except Exception:
             return 0
 
     def trigger_retraining(self, reason: str = "manual") -> Dict[str, Any]:
@@ -261,12 +278,18 @@ class ModelRetrainingManager:
             if self._get_daily_retrain_attempts() >= self.max_retrain_attempts:
                 return {
                     "status": "error",
-                    "message": f"Maximum daily retrain attempts ({self.max_retrain_attempts}) reached",
+                    "message": (
+                        f"Maximum daily retrain attempts "
+                        f"({self.max_retrain_attempts}) reached"
+                    ),
                 }
 
             # Load new training data
             if not self.new_data_file.exists():
-                return {"status": "error", "message": "No new training data available"}
+                return {
+                    "status": "error",
+                    "message": "No new training data available"
+                }
 
             new_data = pd.read_csv(self.new_data_file)
             if len(new_data) == 0:
@@ -280,11 +303,18 @@ class ModelRetrainingManager:
 
             # Combine datasets
             combined_data = pd.concat(
-                [original_data, new_data[original_data.columns]], ignore_index=True
+                [
+                    original_data,
+                    new_data[original_data.columns]
+                ],
+                ignore_index=True
             )
 
             logger.info(
-                f"Combined dataset size: {len(combined_data)} samples (original: {len(original_data)}, new: {len(new_data)})"
+                (
+                    f"Combined dataset size: {len(combined_data)} samples "
+                    f"(original: {len(original_data)}, new: {len(new_data)})"
+                )
             )
 
             # Prepare features and targets
@@ -306,7 +336,8 @@ class ModelRetrainingManager:
                 X, y, test_size=0.2, random_state=42
             )
 
-            # Train only DecisionTree model (best performing from original training)
+            # Train only DecisionTree model (best performing from original
+            # training)
             model = DecisionTreeRegressor(random_state=42)
             model.fit(X_train, y_train)
 
@@ -319,7 +350,9 @@ class ModelRetrainingManager:
             best_model_info = {"model": model, "rmse": rmse, "r2": r2}
 
             # Save new model
-            model_save_path = self.models_dir / f"{best_model_name}_retrained.pkl"
+            model_save_path = (
+                self.models_dir / f"{best_model_name}_retrained.pkl"
+            )
             joblib.dump(best_model_info["model"], model_save_path)
 
             # Backup old model and replace with new one
@@ -327,7 +360,10 @@ class ModelRetrainingManager:
             if old_model_path.exists():
                 backup_path = (
                     self.models_dir
-                    / f"{best_model_name}_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pkl"
+                    / (
+                        f"{best_model_name}_backup_"
+                        f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.pkl"
+                    )
                 )
                 old_model_path.rename(backup_path)
 
@@ -343,7 +379,10 @@ class ModelRetrainingManager:
             )
 
             logger.info(
-                f"Retraining completed successfully. Best model: {best_model_name} (RMSE: {best_model_info['rmse']:.2f})"
+                (
+                    f"Retraining completed successfully. Best model: "
+                    f"{best_model_name} (RMSE: {best_model_info['rmse']:.2f})"
+                )
             )
 
             return {
@@ -366,7 +405,11 @@ class ModelRetrainingManager:
 
             # Log failed attempt
             self._log_retrain_event(
-                reason, "failed", {"error": str(e)}, retrain_duration, success=False
+                reason,
+                "failed",
+                {"error": str(e)},
+                retrain_duration,
+                success=False
             )
 
             return {
@@ -388,7 +431,9 @@ class ModelRetrainingManager:
         data["target"] = housing.target
 
         # Convert target to hundreds of thousands (as used in training)
-        data["target"] = data["target"] * 100  # Original is in hundreds of thousands
+        data["target"] = (
+            data["target"] * 100
+        )  # Original is in hundreds of thousands
 
         return data
 
@@ -397,7 +442,10 @@ class ModelRetrainingManager:
         try:
             archive_path = (
                 self.data_dir
-                / f"archived_training_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                / (
+                    "archived_training_data_"
+                    f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                )
             )
             self.new_data_file.rename(archive_path)
 
@@ -448,7 +496,9 @@ class ModelRetrainingManager:
                     }
                 )
             elif not success:
-                log_entry["error"] = str(model_info.get("error", "Unknown error"))
+                log_entry["error"] = str(
+                    model_info.get("error", "Unknown error")
+                )
 
             # Read existing log
             with open(self.retrain_log_file, "r") as f:
@@ -494,7 +544,9 @@ class ModelRetrainingManager:
                 recent_retrains = retrain_log[-5:]  # Last 5 entries
 
             # Check if retraining should be triggered
-            should_retrain, reason = self._should_trigger_retraining(new_data_count)
+            should_retrain, reason = self._should_trigger_retraining(
+                new_data_count
+            )
 
             return {
                 "new_data_samples": new_data_count,
@@ -524,5 +576,7 @@ def get_retraining_manager(
     """Get or create the global retraining manager"""
     global _retraining_manager
     if _retraining_manager is None:
-        _retraining_manager = ModelRetrainingManager(db_path, models_dir, data_dir)
+        _retraining_manager = ModelRetrainingManager(
+            db_path, models_dir, data_dir
+        )
     return _retraining_manager

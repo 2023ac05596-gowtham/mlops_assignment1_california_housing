@@ -7,7 +7,6 @@ Model loading, inference utilities, and prediction calculations
 import os
 import logging
 import joblib
-import numpy as np
 import pandas as pd
 
 # Setup logger
@@ -68,7 +67,9 @@ def load_model():
 
     try:
         model = joblib.load(model_path)
-        logger.info(f"Model {model_name} loaded successfully from {model_path}")
+        logger.info(
+            f"Model {model_name} loaded successfully from {model_path}"
+        )
     except Exception as e:
         logger.error(f"Error loading model: {str(e)}")
         raise e
@@ -98,7 +99,9 @@ def make_prediction(feature_array):
 
 
 def prepare_feature_array(features):
-    """Prepare feature array from HousingFeatures object with proper column names"""
+    """
+    Prepare feature array from HousingFeatures object with proper column names
+    """
     # Create DataFrame with proper feature names to match training data
     if isinstance(features, list):
         # Handle batch of features
@@ -135,7 +138,8 @@ def validate_business_logic(features):
         errors.append(
             {
                 "error": (
-                    "Invalid input: Average bedrooms cannot exceed " "average rooms"
+                    "Invalid input: Average bedrooms cannot exceed "
+                    "average rooms"
                 ),
                 "suggestion": "Please ensure AveBedrms <= AveRooms",
             }

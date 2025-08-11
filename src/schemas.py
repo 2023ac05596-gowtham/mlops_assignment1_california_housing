@@ -92,7 +92,9 @@ class PredictionResponse(BaseModel):
 
     predicted_price: float = Field(
         ...,
-        description=("Predicted median house value in USD " "(United States Dollars)"),
+        description=(
+            "Predicted median house value in USD (United States Dollars)"
+        ),
     )
     confidence_score: float = Field(
         ..., description="Prediction confidence score (0-1, higher is better)"
@@ -122,7 +124,8 @@ class BatchPredictionResponse(BaseModel):
     predictions: List[dict] = Field(
         ...,
         description=(
-            "List of prediction results with confidence scores " "(prices in USD)"
+            "List of prediction results with confidence scores "
+            "(prices in USD)"
         ),
     )
     model_used: str = Field(..., description="Model used for predictions")
@@ -168,7 +171,10 @@ class BatchTrainingDataSubmission(BaseModel):
     """
 
     training_data: List[TrainingDataSubmission] = Field(
-        ..., description="List of training data samples", min_items=1, max_items=100
+        ...,
+        description="List of training data samples",
+        min_items=1,
+        max_items=100,
     )
 
     class Config:
@@ -212,10 +218,14 @@ class RetrainingTriggerRequest(BaseModel):
     """
 
     reason: str = Field(
-        default="manual_trigger", description="Reason for triggering retraining"
+        default="manual_trigger",
+        description="Reason for triggering retraining",
     )
     force: bool = Field(
-        default=False, description="Force retraining even if conditions are not met"
+        default=False,
+        description=(
+            "Force retraining even if conditions are not met"
+        )
     )
 
 
@@ -224,8 +234,13 @@ class RetrainingStatusResponse(BaseModel):
     Response schema for retraining status
     """
 
-    new_data_samples: int = Field(..., description="Number of new training samples")
-    model_age_days: int = Field(..., description="Age of current model in days")
+    new_data_samples: int = Field(
+        ...,
+        description="Number of new training samples"
+    )
+    model_age_days: int = Field(
+        ..., description="Age of current model in days"
+    )
     should_retrain: bool = Field(
         ..., description="Whether retraining should be triggered"
     )
@@ -235,9 +250,17 @@ class RetrainingStatusResponse(BaseModel):
     daily_retrain_attempts: int = Field(
         ..., description="Number of retrain attempts today"
     )
-    max_daily_attempts: int = Field(..., description="Maximum allowed daily attempts")
-    thresholds: dict = Field(..., description="Configured retraining thresholds")
-    recent_retrains: List[dict] = Field(..., description="Recent retraining history")
+    max_daily_attempts: int = Field(
+        ...,
+        description="Maximum allowed daily attempts"
+    )
+    thresholds: dict = Field(
+        ..., description="Configured retraining thresholds"
+    )
+    recent_retrains: List[dict] = Field(
+        ...,
+        description="Recent retraining history"
+    )
 
 
 class RetrainingResponse(BaseModel):
@@ -255,11 +278,20 @@ class BatchRetrainingResponse(BaseModel):
     Response schema for batch training data submission
     """
 
-    status: str = Field(..., description="Overall operation status (success/error)")
+    status: str = Field(
+        ...,
+        description="Overall operation status (success/error)"
+    )
     message: str = Field(..., description="Operation result message")
     timestamp: str = Field(..., description="Response timestamp")
-    samples_added: int = Field(..., description="Number of samples successfully added")
-    total_samples: int = Field(..., description="Total samples now in training dataset")
+    samples_added: int = Field(
+        ...,
+        description="Number of samples successfully added"
+    )
+    total_samples: int = Field(
+        ...,
+        description="Total samples now in training dataset"
+    )
     failed_samples: int = Field(
         default=0, description="Number of samples that failed validation"
     )

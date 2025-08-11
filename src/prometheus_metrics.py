@@ -4,12 +4,10 @@ Prometheus metrics collection for California Housing API
 Custom metrics for monitoring model performance and API usage
 """
 
-from prometheus_client import Counter, Histogram, Gauge, Info
+from prometheus_client import Counter, Histogram, Gauge
 from prometheus_fastapi_instrumentator import Instrumentator, metrics
 from fastapi import FastAPI
 import time
-from datetime import datetime
-from typing import Dict, Any
 
 # Essential Custom metrics for bonus requirements
 prediction_requests_total = Counter(
@@ -46,7 +44,8 @@ retraining_trigger_total = Counter(
 )
 
 new_data_points = Counter(
-    "housing_new_data_points_total", "Total number of new training data points received"
+    "housing_new_data_points_total",
+    "Total number of new training data points received"
 )
 
 # Batch prediction metrics
@@ -89,7 +88,9 @@ class PrometheusMetricsCollector:
 
     def track_prediction_request(self, endpoint: str, status: str = "success"):
         """Track prediction requests"""
-        prediction_requests_total.labels(endpoint=endpoint, status=status).inc()
+        prediction_requests_total.labels(
+            endpoint=endpoint, status=status
+        ).inc()
 
     def track_prediction_duration(self, endpoint: str, duration: float):
         """Track prediction duration"""
@@ -101,7 +102,9 @@ class PrometheusMetricsCollector:
 
     def track_api_error(self, endpoint: str, status_code: int):
         """Track API errors"""
-        api_errors_total.labels(endpoint=endpoint, status_code=str(status_code)).inc()
+        api_errors_total.labels(
+            endpoint=endpoint, status_code=str(status_code)
+        ).inc()
 
     def set_model_status(self, loaded: bool):
         """Set model load status"""
